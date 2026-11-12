@@ -1,0 +1,44 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="visuals.css">
+<style>
+:root{--w:1500px;--h:1000px}
+.wm{height:56px}
+h1{font-size:92px;margin-top:64px;max-width:640px}
+.lead{font-size:28px;margin-top:28px;max-width:560px}
+.quote{margin-top:44px;max-width:580px;padding:24px 28px;border-radius:20px;background:#fff;border:1px solid var(--line);font:500 21px/1.45 var(--font);color:var(--ink-2)}
+.quote b{color:var(--ink);font-weight:700}
+.panel{position:absolute;right:88px;top:120px;width:620px;padding:36px 36px 28px}
+.k{font:700 14px/1 var(--font);letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.amt{font:800 96px/1 var(--font);letter-spacing:-.04em;margin-top:14px;color:var(--ink)}
+.amt small{font-size:44px;color:var(--ink-3)}
+.held{display:flex;gap:10px;margin-top:16px}
+.bar{display:flex;height:14px;border-radius:999px;overflow:hidden;margin:26px 0 8px;background:var(--slate-50)}
+.bar i{display:block}
+.legend{display:flex;justify-content:space-between;font:600 15px/1 var(--font);color:var(--ink-3)}
+.ms{margin-top:26px;display:grid;gap:12px}
+.m{display:grid;grid-template-columns:48px 1fr auto;align-items:center;gap:16px;padding:16px 18px;border:1px solid var(--line);border-radius:16px}
+.ring{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font:800 15px/1 var(--font)}
+.m h3{font:700 19px/1.2 var(--font)} .m p{font:500 15px/1.3 var(--font);color:var(--ink-3);margin-top:4px}
+.m .v{text-align:right;font:750 22px/1 var(--font)} .m .v .chip{margin-top:8px}
+.foot{left:88px}
+.sig{position:absolute;left:0;right:0;bottom:96px;height:120px}
+</style></head><body>
+<div class="frame">
+  <img class="wm" src="../../assets/logo-wordmark.svg" alt="Pactline">
+  <h1>Deals that pay themselves.</h1>
+  <p class="lead">Type the deal in plain English. PayPal holds the money. Each milestone pays out when its proof clears.</p>
+  <div class="quote">"Landing page, <b>$1,200</b>: <b>30%</b> when the staging URL is live, <b>50%</b> when the design matches the mockup, <b>20%</b> after 7 days with no open bugs."</div>
+  <div class="panel card">
+    <div class="k">Held by PayPal</div>
+    <div class="amt num">$840<small>.00</small></div>
+    <div class="held"><span class="chip c-blue">Authorization · AUTHORIZE</span><span class="chip c-green">$360 released</span></div>
+    <div class="bar"><i style="width:30%;background:#0B7A3E"></i><i style="width:70%;background:#0070E0"></i></div>
+    <div class="legend"><span>Captured $360</span><span>Still held $840</span></div>
+    <div class="ms">
+      <div class="m"><div class="ring c-green">30%</div><div><h3>Staging URL is live</h3><p>URL check · passed</p></div><div class="v num">$360<br><span class="chip c-green">✓ Released</span></div></div>
+      <div class="m"><div class="ring c-amber">50%</div><div><h3>Design matches the mockup</h3><p>Claude vision · checking proof</p></div><div class="v num">$600<br><span class="chip c-amber">◔ Checking</span></div></div>
+      <div class="m"><div class="ring c-slate">20%</div><div><h3>7 days, no open bugs</h3><p>Timer · day 0 of 7</p></div><div class="v num">$240<br><span class="chip c-slate">○ Pending</span></div></div>
+    </div>
+  </div>
+  <svg class="sig" viewBox="0 0 1500 120" aria-hidden="true"><path d="M-10 100H640C700 100 735 62 735 40C735 20 720 8 703 8C686 8 671 20 671 40C671 62 706 100 766 100H1380" fill="none" stroke="#003087" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="1408" cy="100" r="13" fill="#C8F031" stroke="#003087" stroke-width="3"/></svg>
+  <div class="foot"><span>PayPal Orders v2 · Payments v2 · Invoicing v2 · Webhooks</span><span>Claude Sonnet 5.5 · model-checked contracts</span></div>
+</div></body></html>

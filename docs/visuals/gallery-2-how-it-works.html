@@ -1,0 +1,26 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="visuals.css">
+<style>
+:root{--w:1500px;--h:1000px}
+h1{font-size:68px;margin-top:18px}
+.grid{position:absolute;left:88px;right:88px;top:270px;display:grid;grid-template-columns:repeat(3,1fr);column-gap:40px;row-gap:96px}
+.s{position:relative;z-index:1;padding:28px 30px;height:250px}
+.n{width:40px;height:40px;border-radius:50%;background:var(--navy);color:#fff;display:grid;place-items:center;font:800 18px/1 var(--font)}
+.s.lime .n{background:var(--lime);color:var(--navy)}
+.s h2{font-size:32px;margin-top:18px}
+.s p{font:500 18px/1.4 var(--font);color:var(--ink-2);margin-top:10px}
+.s code{font:500 15px/1 var(--mono);background:var(--blue-50);color:var(--navy);padding:4px 8px;border-radius:8px;display:inline-block;margin-top:12px}
+svg.path{position:absolute;left:0;top:0;width:1500px;height:1000px;z-index:0}
+</style></head><body>
+<div class="frame">
+  <div class="eyebrow">How it works</div>
+  <h1>One line from deal to payout.</h1>
+  <svg class="path" viewBox="0 0 1500 1000" aria-hidden="true"><path d="M250 400H1250C1330 400 1360 440 1360 490V580C1360 630 1330 743 1250 743H250" fill="none" stroke="#0070E0" stroke-width="6" stroke-linecap="round" stroke-dasharray="1 14"/></svg>
+  <div class="grid">
+    <div class="s card"><div class="n">1</div><h2>Deal in English</h2><p>Both sides agree on words, not forms.</p><code>"$1,200: 30% when…"</code></div>
+    <div class="s card"><div class="n">2</div><h2>Verified contract</h2><p>Claude compiles it. A model checker walks every path before money moves.</p><code>204 paths · 0 violations</code></div>
+    <div class="s card"><div class="n">3</div><h2>PayPal hold</h2><p>The client approves. The money is held by PayPal, not charged, not held by us.</p><code>intent: AUTHORIZE</code></div>
+    <div class="s card"><div class="n">6</div><h2>Audit trail</h2><p>Every PayPal call with its ID, debug ID and running balance.</p><code>held = captured + voided</code></div>
+    <div class="s card lime"><div class="n">5</div><h2>Release</h2><p>A partial capture pays that milestone. Cancel voids the rest.</p><code>capture · final_capture:false</code></div>
+    <div class="s card"><div class="n">4</div><h2>Proof check</h2><p>URL, GitHub PR, timer, or Claude vision against the criteria.</p><code>pass · fail · unclear → human</code></div>
+  </div>
+</div></body></html>
