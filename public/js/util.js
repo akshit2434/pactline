@@ -48,6 +48,8 @@ const ICONS = {
   list: 'M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01',
   table: 'M3 5h18v14H3zM3 10h18M9 5v14',
   chev: 'M9 6l6 6-6 6',
+  copy: 'M9 9h11v11H9zM5 15V4h10',
+  search: 'M11 18a7 7 0 100-14 7 7 0 000 14zM21 21l-4.500-4.500',
   dots: 'M5 12h.01M12 12h.01M19 12h.01',
   upload: 'M12 16V4M7 9l5-5 5 5M5 20h14',
   user: 'M12 12a4 4 0 100-8 4 4 0 000 8zM4 21a8 8 0 0116 0',

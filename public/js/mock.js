@@ -68,6 +68,8 @@ export function createMock({ speed = 1 } = {}) {
       held_cents: m.held_cents, captured_cents: m.captured_cents, voided_cents: m.voided_cents, balance_cents: m.remaining_cents,
       note: '', mock: true, ...o,
     };
+    // Simulated PayPal latency (real rows carry no duration; the UI then shows time since the previous row).
+    if (r.http_status && !['state', 'webhook', 'judge'].includes(r.kind) && r.duration_ms == null) r.duration_ms = 90 + ((rowId * 137) % 380);
     ledger.push(r);
     emit('ledger.row', deal, r.milestone_id, r.note || r.call);
     return r;

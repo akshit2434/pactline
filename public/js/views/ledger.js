@@ -1,6 +1,7 @@
 import { h, ic, money, fmtTime, fmtDate } from '../util.js';
 import { api } from '../api.js';
 import { state, nav } from '../state.js';
+import { mountLedgerGrid } from './ledger-grid.js';
 
 const TITLE = {
   'order.create': 'Order created', 'order.authorize': 'Hold authorized', capture: 'Released to freelancer', void: 'Remainder voided', reauthorize: 'Hold extended',
@@ -31,14 +32,23 @@ function rawFor(r, deal) {
   return { label: 'Request shape (rebuilt from this record)', line: isHttp ? line : null, headers: isHttp ? headers : null, body: isHttp ? body : null };
 }
 
-function hl(json) {
+export function hl(json) {
   const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
   return esc(json).replace(/("(?:\\.|[^"\\])*")(\s*:)?|\b(-?\d+\.?\d*)\b/g, (m, str, colon, num) => (str ? (colon ? `<span class="k">${str}</span>${colon}` : `<span class="s">${str}</span>`) : `<span class="n">${num}</span>`));
 }
 
+// Text of the three raw blocks (request, response, ledger record), shared by the timeline and the grid.
+function rawBlocks(r, deal) {
+  const raw = rawFor(r, deal);
+  const req = raw.line ? [raw.line, ...Object.entries(raw.headers).map(([k, v]) => `${k}: ${v}`), '', raw.body ? JSON.stringify(raw.body, null, 2) : ''].join('\n') : (raw.req ? JSON.stringify(raw.req, null, 2) : r.call);
+  return { label: raw.label, req, res: raw.res ? JSON.stringify(raw.res, null, 2) : null, rec: JSON.stringify(r, null, 2) };
+}
+
 export function mount(root, { id }) {
-  let rows = [], deal = null, dead = false, filter = 'all', view = 'timeline';
+  let rows = [], deal = null, dead = false, filter = 'all', view = ['grid', 'table'].includes(state.ledgerView) ? 'grid' : 'timeline';
+  let gridCtl = null, gridToken = 0, quick = '';
   const open = new Set();
+  const chartHost = h('div'), body = h('div');
   const content = h('div'), filters = h('div', { class: 'filters', role: 'group', 'aria-label': 'Filter' }), toggle = h('div', { class: 'seg', role: 'group', 'aria-label': 'View' });
   const kick = h('span', { class: 'kicker' }, 'Ledger'), titleEl = h('h1', null, 'Audit trail'), sub = h('p', { class: 'lede' }, 'Every call to PayPal, in order.');
   root.append(h('section', { class: 'page' },
@@ -47,10 +57,10 @@ export function mount(root, { id }) {
 
   const F = [['all', 'All'], ['paypal', 'PayPal'], ['webhook', 'Webhooks'], ['ai', 'AI checks']];
   function paintControls() {
-    filters.replaceChildren(...F.map(([k, l]) => h('button', { class: 'chip', type: 'button', 'aria-pressed': String(filter === k), onclick: () => { filter = k; paint(); } }, l)));
+    filters.replaceChildren(...F.map(([k, l]) => h('button', { class: 'chip', type: 'button', 'aria-pressed': String(filter === k), onclick: () => { filter = k; paintControls(); if (view === 'grid' && gridCtl) gridCtl.setGroup(k); else paint(); } }, l)));
     toggle.replaceChildren(
-      h('button', { type: 'button', 'aria-pressed': String(view === 'timeline'), onclick: () => { view = 'timeline'; paint(); } }, 'Timeline'),
-      h('button', { type: 'button', 'aria-pressed': String(view === 'table'), onclick: () => { view = 'table'; paint(); } }, 'Table'));
+      h('button', { type: 'button', 'aria-pressed': String(view === 'timeline'), onclick: () => { view = 'timeline'; state.ledgerView = 'timeline'; paint(); } }, 'Timeline'),
+      h('button', { type: 'button', 'aria-pressed': String(view === 'grid'), onclick: () => { view = 'grid'; state.ledgerView = 'grid'; paint(); } }, 'Grid'));
   }
 
   function chart() {
@@ -74,22 +84,41 @@ export function mount(root, { id }) {
     return wrap;
   }
 
-  function paint() {
-    paintControls();
-    const list = rows.filter((r) => filter === 'all' || grp(r.kind) === filter);
-    content.replaceChildren();
-    if (!rows.length) { content.append(h('div', { class: 'empty-state' }, h('h2', null, 'No calls yet'), h('p', null, 'Hold funds to see the first PayPal call land here.'), h('a', { class: 'btn primary', href: '#/' }, 'Start a deal'))); return; }
-    const ch = chart(); if (ch) content.append(ch);
-    if (view === 'table') {
-      content.append(h('div', { class: 'card gridwrap' }, h('table', { class: 'grid' },
-        h('thead', null, h('tr', null, ['Time', 'Call', 'PayPal ID', 'Debug ID', 'Status', 'Amount', 'Held', 'Captured', 'Balance'].map((t, i) => h('th', { class: i > 4 ? 'n' : '' }, t)))),
-        h('tbody', null, list.map((r) => h('tr', null,
-          h('td', { class: 'mono' }, fmtTime(r.ts)), h('td', { class: 'mono call' }, r.call), h('td', { class: 'mono' }, r.paypal_id || '–'), h('td', { class: 'mono' }, r.debug_id || '–'),
-          h('td', null, h('span', { class: 'sc ' + (r.http_status < 300 ? 'ok' : '') }, r.http_status || '', ' ', r.status)),
-          h('td', { class: 'n' }, r.amount_cents ? money(r.amount_cents) : '–'), h('td', { class: 'n' }, money(r.held_cents)), h('td', { class: 'n' }, money(r.captured_cents)), h('td', { class: 'n' }, money(r.balance_cents))))))));
-      return;
+  const disposeGrid = () => { gridToken++; if (gridCtl) gridCtl.destroy(); gridCtl = null; };
+  const paintChart = () => { const ch = chart(); chartHost.replaceChildren(...(ch ? [ch] : [])); };
+
+  // The plain HTML table: used when the vendored AG Grid file cannot load.
+  function basicTable(list) {
+    return h('div', { class: 'card gridwrap' }, h('table', { class: 'grid' },
+      h('thead', null, h('tr', null, ['Time', 'Call', 'PayPal ID', 'Debug ID', 'Status', 'Amount', 'Held', 'Captured', 'Balance'].map((t, i) => h('th', { class: i > 4 ? 'n' : '' }, t)))),
+      h('tbody', null, list.map((r) => h('tr', null,
+        h('td', { class: 'mono' }, fmtTime(r.ts)), h('td', { class: 'mono call' }, r.call), h('td', { class: 'mono' }, r.paypal_id || '–'), h('td', { class: 'mono' }, r.debug_id || '–'),
+        h('td', null, h('span', { class: 'sc ' + (r.http_status < 300 ? 'ok' : '') }, r.http_status || '', ' ', r.status)),
+        h('td', { class: 'n' }, r.amount_cents ? money(r.amount_cents) : '–'), h('td', { class: 'n' }, money(r.held_cents)), h('td', { class: 'n' }, money(r.captured_cents)), h('td', { class: 'n' }, money(r.balance_cents)))))));
+  }
+
+  async function paintGrid() {
+    const tok = ++gridToken;
+    const skel = h('div', { class: 'skel', style: { height: '320px', borderRadius: '24px' } }), host = h('div');
+    body.replaceChildren(skel, host);
+    try {
+      const ctl = await mountLedgerGrid(host, { rows, deal, group: filter, quick, open, onQuick: (v) => { quick = v; }, helpers: { TITLE, grp, rawBlocks, hl } });
+      if (dead || tok !== gridToken) { ctl.destroy(); return; }
+      skel.remove(); gridCtl = ctl;
+    } catch (e) {
+      if (dead || tok !== gridToken) return;
+      console.warn('[pactline] AG Grid unavailable, showing the basic table:', e.message);
+      body.replaceChildren(basicTable(rows.filter((r) => filter === 'all' || grp(r.kind) === filter)), h('p', { class: 'pl-fallback' }, 'Showing the basic table because the grid could not load.'));
     }
-    content.append(h('ol', { class: 'tl' }, list.map((r) => entry(r))));
+  }
+
+  function paint() {
+    paintControls(); disposeGrid();
+    if (!rows.length) { content.replaceChildren(h('div', { class: 'empty-state' }, h('h2', null, 'No calls yet'), h('p', null, 'Hold funds to see the first PayPal call land here.'), h('a', { class: 'btn primary', href: '#/' }, 'Start a deal'))); return; }
+    content.replaceChildren(chartHost, body); paintChart();
+    if (view === 'grid') { paintGrid(); return; }
+    const list = rows.filter((r) => filter === 'all' || grp(r.kind) === filter);
+    body.replaceChildren(h('ol', { class: 'tl' }, list.map((r) => entry(r))));
   }
 
   function entry(r) {
@@ -101,13 +130,11 @@ export function mount(root, { id }) {
       h('span', { class: 'amt' }, r.amount_cents ? money(r.amount_cents) : '', h('small', null, `PayPal holds ${money(r.balance_cents, { compact: true })}`)));
     const item = h('div', { class: 'item' + (isOpen ? ' open' : '') }, btn);
     if (isOpen) {
-      const raw = rawFor(r, deal);
-      const req = raw.line ? [raw.line, ...Object.entries(raw.headers).map(([k, v]) => `${k}: ${v}`), '', raw.body ? JSON.stringify(raw.body, null, 2) : ''].join('\n') : (raw.req ? JSON.stringify(raw.req, null, 2) : r.call);
-      const rec = JSON.stringify(r, null, 2);
+      const raw = rawBlocks(r, deal);
       item.append(h('div', { class: 'raw' },
-        h('h4', null, raw.label), h('pre', { html: hl(req) }),
-        raw.res ? [h('h4', null, 'Response'), h('pre', { html: hl(JSON.stringify(raw.res, null, 2)) })] : null,
-        h('h4', null, 'Ledger record'), h('pre', { html: hl(rec) })));
+        h('h4', null, raw.label), h('pre', { html: hl(raw.req) }),
+        raw.res ? [h('h4', null, 'Response'), h('pre', { html: hl(raw.res) })] : null,
+        h('h4', null, 'Ledger record'), h('pre', { html: hl(raw.rec) })));
     }
     return h('li', { class: kClass(r.kind) }, h('span', { class: 'when' }, fmtTime(r.ts)), h('span', { class: 'dotcol' }, h('i')), item);
   }
@@ -119,11 +146,12 @@ export function mount(root, { id }) {
       if (did) { deal = await api.getDeal(did); titleEl.textContent = deal.contract.title; kick.textContent = 'Ledger · ' + deal.id; }
       rows = did ? await api.ledger(did) : [];
       if (dead) return;
+      if (view === 'grid' && gridCtl && rows.length) { paintChart(); gridCtl.setRows(rows); return; } // live row: animate it in, keep scroll and filter
       paint();
     } catch (e) { content.replaceChildren(h('div', { class: 'err' }, e.message)); }
   }
   paintControls();
   content.append(h('div', { class: 'skel', style: { height: '320px', borderRadius: '24px' } }));
   load();
-  return { onEvent(e) { if (e.type === 'ledger.row' && (!deal || e.deal_id === deal.id)) load(); }, destroy() { dead = true; } };
+  return { onEvent(e) { if (e.type === 'ledger.row' && (!deal || e.deal_id === deal.id)) load(); }, destroy() { dead = true; disposeGrid(); } };
 }
