@@ -1,4 +1,4 @@
-import { h, ic, money, RM, initials, countTo } from './util.js';
+import { h, ic, money, RM, initials, countTo, sleep } from './util.js';
 
 // ---- popover helper (tap to open, outside click / Esc closes) ----
 export function popover(trigger, content, cls = '') {
@@ -12,6 +12,7 @@ export function popover(trigger, content, cls = '') {
     if (pop) return close();
     pop = h('div', { class: 'pop ' + cls, role: 'dialog' }, typeof content === 'function' ? content() : content);
     wrap.append(pop); trigger.setAttribute('aria-expanded', 'true');
+    const r = pop.getBoundingClientRect(); if (r.right > window.innerWidth - 8) pop.classList.add('right');
     document.addEventListener('click', away, true); document.addEventListener('keydown', esc);
   });
   return wrap;
@@ -61,14 +62,15 @@ export function paypalSheet({ amount_cents, client, payee, onApprove, onCancel }
 }
 
 // ---- money flow strip: client -> PayPal vessel -> payee ----
+const short = (n) => String(n).split(' ')[0];
 export function flowStrip({ client, payee }) {
   const waveSvg = '<svg viewBox="0 0 200 12" preserveAspectRatio="none" aria-hidden="true"><path d="M0 6 Q12.5 0 25 6 T50 6 T75 6 T100 6 T125 6 T150 6 T175 6 T200 6 V12 H0Z"/></svg>';
   const liquid = h('div', { class: 'liquid', html: waveSvg });
   const vessel = h('div', { class: 'vessel empty', role: 'img', 'aria-label': 'PayPal hold' }, liquid, h('div', { class: 'vlabel' }, h('span', null, 'PayPal'), h('b', null, 'hold')));
   const got = h('div', { class: 'got' }), back = h('div', { class: 'back' });
   const laneIn = h('div', { class: 'lane in' }), laneOut = h('div', { class: 'lane out' });
-  const cEl = h('div', { class: 'party client' }, h('span', { class: 'av' }, initials(client)), h('b', null, client), h('small', null, 'Client'), back);
-  const pEl = h('div', { class: 'party payee' }, h('span', { class: 'av alt' }, initials(payee)), h('b', null, payee), h('small', null, 'Gets paid'), got);
+  const cEl = h('div', { class: 'party client' }, h('span', { class: 'av' }, initials(client)), h('b', null, short(client)), h('small', null, 'Client'), back);
+  const pEl = h('div', { class: 'party payee' }, h('span', { class: 'av alt' }, initials(payee)), h('b', null, short(payee)), h('small', null, 'Gets paid'), got);
   const token = h('div', { class: 'token' });
   const el = h('div', { class: 'flow' }, cEl, laneIn, vessel, laneOut, pEl, token);
   let lvl = 0, gotC = 0;
@@ -84,7 +86,7 @@ export function flowStrip({ client, payee }) {
       { opacity: 1, offset: .85, transform: 'translate(-50%,-50%) scale(1)' },
       { left: b.x + 'px', top: b.y + 'px', opacity: 0, transform: 'translate(-50%,-50%) scale(.7)' },
     ], { duration: ms, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'forwards' });
-    return anim.finished.catch(() => {});
+    return Promise.race([anim.finished.catch(() => {}), sleep(ms + 250)]);
   }
   const api = {
     el,

@@ -1,5 +1,5 @@
 // Small DOM + formatting helpers (no framework).
-export const RM = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+export const RM = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches || document.documentElement.classList.contains('still');
 
 export function h(tag, props, ...kids) {
   const el = document.createElement(tag);
@@ -20,6 +20,7 @@ function add(el, kids) {
     el.append(k instanceof Node ? k : document.createTextNode(String(k)));
   }
 }
+export const raf = (f) => (document.hidden ? setTimeout(() => f(performance.now()), 16) : requestAnimationFrame(f));
 export const $ = (s, r = document) => r.querySelector(s);
 export const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -79,9 +80,9 @@ export function countTo(el, from, to, ms = 700, fmt = money) {
   const step = (t) => {
     const p = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - p, 3);
     el.textContent = fmt(Math.round(from + (to - from) * e));
-    if (p < 1) requestAnimationFrame(step);
+    if (p < 1) raf(step);
   };
-  requestAnimationFrame(step);
+  raf(step);
 }
 
 // Type text into an element, resolving when done. cancel() stops early.
@@ -106,7 +107,7 @@ export function toast(msg, kind = '') {
   const box = document.getElementById('toasts');
   const t = h('div', { class: 'toast ' + kind, role: 'status' }, kind === 'ok' ? ic('check', 16) : null, msg);
   box.append(t);
-  requestAnimationFrame(() => t.classList.add('in'));
+  raf(() => t.classList.add('in'));
   setTimeout(() => { t.classList.remove('in'); setTimeout(() => t.remove(), 300); }, 3200);
 }
 

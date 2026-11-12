@@ -8,7 +8,7 @@ import { refreshChrome, subscribeEvents, getCurrent } from './app.js';
 
 const params = new URLSearchParams(location.search);
 const SPEED = Math.max(0.25, parseFloat(params.get('speed')) || 1);
-const TOTAL = 138; // seconds, planned length at speed 1
+const TOTAL = 118; // seconds, planned length at speed 1
 let run = null;
 
 class Aborted extends Error {}
@@ -18,6 +18,7 @@ export const toggleDemo = () => (run ? stopDemo() : startDemo());
 const cap = () => $('#caption'), ghost = () => $('#ghost');
 
 function say(text) {
+  console.debug('[demo]', Math.round(run ? run.t / 1000 : 0) + 's', text);
   const c = cap(); c.hidden = false;
   const html = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
   c.firstElementChild.innerHTML = html;
@@ -190,7 +191,7 @@ async function script() {
 
 export async function startDemo() {
   if (run) return;
-  run = { cancelled: false, paused: false, t: 0 };
+  run = { cancelled: false, paused: false, t: 0, wall0: performance.now() };
   state.demo = true;
   engine.useMock(SPEED); subscribeEvents();
   Object.assign(state, { deal: null, ledger: [], role: 'client', pendingContract: null, draft: { text: '', parsed: null, contract: null, verification: null, attempts: [], source: null, compiledText: null } });
@@ -207,6 +208,7 @@ export async function startDemo() {
 
 function endDemo() {
   if (!run) return;
+  console.info('[demo] finished after', Math.round((performance.now() - run.wall0) / 1000) + 's of wall time');
   run.cancelled = true; run = null;
   state.demo = false;
   document.body.classList.remove('demo-on');

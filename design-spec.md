@@ -1,6 +1,6 @@
 # Pactline design spec (one page)
 
-**Inspiration read (12 Nov, screenshots in `public/inspiration/`):** PayPal sign-in and developer dashboard (pill buttons, 1px hairline cards, deep PayPal blue `#0551B5`, black secondary pill, big confident headings, almost no chrome); Stripe Link (one white card, one big action, soft shadow, generous space); Wise (one huge fact, friendly weight); Mercury (calm, tinted, soft type); Linear (restraint, dense-but-quiet). Takeaway: one card, one number, one pill button per screen.
+**Inspiration read (12 Nov; screenshots kept outside the repo in `desk/screenshots/pactline/refs/`):** PayPal sign-in and developer dashboard (pill buttons, 1px hairline cards, deep PayPal blue `#0551B5`, black secondary pill, big confident headings, almost no chrome); Stripe Link (one white card, one big action, soft shadow, generous space); Wise (one huge fact, friendly weight); Mercury (calm, tinted, soft type); Linear (restraint, dense-but-quiet). Takeaway: one card, one number, one pill button per screen.
 
 ## Principles
 One decision per screen. One primary pill action. The one fact that matters is huge (held amount / next release). Details hide behind a tap (verdict reasons, oracle, raw PayPal request). Optimistic UI with skeletons. No confetti: completion = ring draw, count-up, soft green glow. Money is always visible moving (hold fills the vessel, release slides to the payee).
@@ -31,3 +31,10 @@ Ease-out `cubic-bezier(.2,.8,.2,1)`; spring `cubic-bezier(.34,1.56,.64,1)` for p
 
 ## Components
 Top bar (logo, 4 progress dots, status pill, Ledger, Demo [D], theme) · Composer (textarea, example chips, live preview that types in) · Verified badge (tap: invariants) · Milestone card (share ring, title, amount, oracle chip, expand) · Money-flow strip (client → PayPal vessel → payee, token) · Hero amount (count-up) · Milestone rail (vertical; pending / checking / needs review / released / rejected / voided) · Proof panel (drop zone, URL, text) · Verdict chip (tap: reasons) · Release button (auto-fires on pass) · Role switch (client / freelancer) · PayPal approval sheet (simulated) · Ledger timeline + table, expandable raw request · Cancel sheet · Toasts · Demo caption bar, progress line, ghost cursor.
+
+## Running it
+`npm start` serves `public/` at http://127.0.0.1:3100 (real PayPal sandbox + Claude when keys exist). Any static server also works (`python3 -m http.server 3200 --bind 127.0.0.1 --directory public`): the UI falls back to an in-browser engine (`js/mock.js`) when `/api/status` is unreachable, or when `?mock=1`.
+
+**Demo mode** (button in the top bar, or press `D`; `Esc` exits; `?demo=1` starts on load; `&speed=2` for a quick test): plays the happy path on the in-browser engine in about 110 seconds, with large captions, a ghost cursor and a progress line. It is clearly labelled "Demo mode · simulated" because a PayPal popup cannot be auto-played; record the real PayPal approval separately and cut it in.
+
+Dev helpers: `?seed=draft|awaiting|funded|midway|done|cancelled` opens a sample deal, `?screen=filled|review|hold` jumps into the flow, `&role=freelancer`, `&typo=1` forces the verifier-catches-a-typo beat, `&still=1` freezes motion for screenshots.

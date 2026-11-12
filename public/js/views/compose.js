@@ -55,7 +55,7 @@ export function mount(root) {
       h('div', { class: 'pv-title' }, c ? c.title : p.title),
       amountEl, list);
     rows.forEach((r, i) => {
-      const t = h('span', { class: 'caret' });
+      const t = h('span');
       const row = h('div', { class: 'pv-row', style: { animationDelay: extra.animate ? i * 220 + 'ms' : '0ms' } },
         h('span', { class: 'pct' }, r.pct + '%'), h('span', { class: 't' }, t), h('span', { class: 'a' }, money(r.amount, { compact: true })));
       list.append(row);
@@ -66,9 +66,12 @@ export function mount(root) {
         t.classList.add('caret');
       } else t.textContent = r.title;
     });
+    const day = c ? c.deadline.day : p.timeout && p.timeout.day;
+    if (day) preview.append(h('div', { class: 'pv-foot' }, ic('undo', 16), `Anything unreleased returns to the client by day ${day}.`));
     if (c && d.attempts && d.attempts.length) {
-      const a = d.attempts[0], e = a.errors[0];
-      preview.append(h('div', { class: 'fix-note' }, ic('sparkle', 18), h('span', null, h('b', null, 'Verifier caught a typo. '), e.message + '. The model fixed it before you saw it.')));
+      const errs = d.attempts.flatMap((a) => a.errors || []);
+      const e = errs.find((x) => x.code === 'SHARES_SUM') || errs[0];
+      preview.append(h('div', { class: 'fix-note' }, ic('sparkle', 18), h('span', null, h('b', null, 'Verifier caught a mistake. '), (e ? e.message : 'The first draft failed a check') + (errs.length > 1 ? ` (+${errs.length - 1} more)` : '') + '. The model fixed it before you saw it.')));
     } else if (mode === 'error') preview.append(h('div', { class: 'fix-note' }, ic('x', 18), extra.message || 'Could not read that yet.'));
   }
 

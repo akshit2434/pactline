@@ -7,9 +7,11 @@ import * as hold from './views/hold.js';
 import * as deal from './views/deal.js';
 import * as ledger from './views/ledger.js';
 import { startDemo, stopDemo, toggleDemo, demoActive } from './demo.js';
+import { DEMO_TEXT, parseDeal } from './parse.js';
 
 const params = new URLSearchParams(location.search);
 const view = $('#view');
+if (params.get('still')) document.documentElement.classList.add('still'); // dev: freeze motion for screenshots
 let current = null, unsub = null;
 
 const STEPS = [['compose', 'Describe'], ['review', 'Review'], ['hold', 'Hold'], ['deal', 'Live']];
@@ -82,9 +84,17 @@ async function boot() {
   } else if (params.get('seed')) {
     const d = await api.seed(params.get('seed'));
     state.deal = d; history.replaceState(null, '', location.pathname);
-    location.hash = d.status === 'AWAITING_FUNDING' || d.status === 'DRAFT' ? '#/hold/' + d.id : '#/deal/' + d.id;
+    location.hash = params.get('then') === 'ledger' ? '#/ledger/' + d.id : d.status === 'AWAITING_FUNDING' || d.status === 'DRAFT' ? '#/hold/' + d.id : '#/deal/' + d.id;
   } else if (params.get('deal')) {
     location.hash = '#/deal/' + params.get('deal');
+  }
+
+  const scr = params.get('screen'); // dev helper: ?screen=filled|review|hold
+  if (scr) {
+    const r = await api.compile(DEMO_TEXT, { typo: params.get('typo') === '1' });
+    Object.assign(state.draft, { text: DEMO_TEXT, parsed: parseDeal(DEMO_TEXT), contract: r.contract, verification: r.verification, attempts: r.attempts || [], source: r.source, compiledText: DEMO_TEXT });
+    if (scr === 'review') location.hash = '#/review';
+    if (scr === 'hold') { state.pendingContract = r.contract; location.hash = '#/hold/new'; }
   }
 
   subscribeEvents();

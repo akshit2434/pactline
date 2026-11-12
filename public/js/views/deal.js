@@ -59,6 +59,9 @@ export function mount(root, { id }) {
     if (animate && target !== shown) countTo(amountEl, shown, target, 800); else amountEl.textContent = money(target);
     shown = target;
     hero.classList.toggle('done', deal.status === 'COMPLETED');
+    const big = amountEl.parentNode, ring = big.querySelector('.done-ring');
+    if (deal.status === 'COMPLETED' && !ring) big.append(h('span', { html: '<svg class="done-ring" viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="30"/><path d="M24 37l8 8 16-17"/></svg>' }).firstChild);
+    else if (deal.status !== 'COMPLETED' && ring) ring.remove();
 
     const act = activeMs();
     if (deal.status === 'ACTIVE') {
@@ -71,7 +74,7 @@ export function mount(root, { id }) {
     }
     foot.replaceChildren(
       h('a', { class: 'btn ghost sm', href: '#/ledger/' + deal.id, id: 'open-ledger' }, ic('doc', 16), 'Audit trail'),
-      deal.status === 'ACTIVE' && state.role === 'client' ? h('button', { class: 'link', type: 'button', id: 'cancel-deal', onclick: askCancel }, 'Cancel and void the rest') : null);
+      ...(deal.status === 'ACTIVE' && state.role === 'client' ? [h('button', { class: 'link', type: 'button', id: 'cancel-deal', onclick: askCancel }, 'Cancel and void the rest')] : []));
   }
 
   async function syncFlow(prev) {

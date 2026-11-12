@@ -1,4 +1,4 @@
-import { h, ic, money, sleep, RM, countTo } from '../util.js';
+import { h, ic, money, sleep, RM, raf } from '../util.js';
 import { api, engine } from '../api.js';
 import { state, nav } from '../state.js';
 import { flowStrip, paypalSheet } from '../components.js';
@@ -31,7 +31,7 @@ export function mount(root, { id }) {
         h('p', { class: 'note' }, 'It stays with the buyer until each milestone is proven.'),
         h('button', { class: 'btn primary lg', type: 'button', id: 'open-deal', onclick: () => go() }, 'Open the deal ', ic('arrow', 18, 'arrow')));
       flow.setLevel(0, false);
-      requestAnimationFrame(async () => { flow.deposit(cents); await sleep(RM() ? 0 : 450); flow.setLevel(1); });
+      raf(async () => { flow.deposit(cents); await sleep(RM() ? 0 : 450); flow.setLevel(1); });
       return;
     }
     const title = { creating: 'Creating your hold…', approve: 'Approve the hold in PayPal', waiting: 'Waiting for PayPal…', cancelled: 'PayPal was closed', error: 'Something went wrong' }[phase];
