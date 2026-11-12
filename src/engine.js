@@ -27,6 +27,9 @@ export function createEngine({ escrow, baseUrl, dataFile, now = () => Date.now()
   }
 
   const esc = (d) => (d.mock ? mockEscrow : escrow);
+  // one operation at a time per deal: two clicks can never release the same milestone twice
+  const locks = new Map();
+  const locked = (id, fn) => { const prev = locks.get(id) || Promise.resolve(); const next = prev.then(fn, fn); locks.set(id, next.catch(() => {})); return next; };
 
   // ---------- events + ledger ----------
   function emit(type, deal, extra = {}) {
@@ -75,7 +78,8 @@ export function createEngine({ escrow, baseUrl, dataFile, now = () => Date.now()
   const get = (id) => { const d = deals.get(id); if (!d) throw new EngineError('NOT_FOUND', `No deal ${id}`, 404); return d; };
 
   // ---------- funding ----------
-  async function startFunding(id) {
+  const startFunding = (...a) => locked(a[0], () => startFundingImpl(...a));
+  async function startFundingImpl(id) {
     const d = get(id);
     if (d.state.status !== 'AWAITING_FUNDING') throw new EngineError('BAD_STATE', 'Deal is not waiting for funding', 409);
     const e = esc(d);
@@ -86,7 +90,8 @@ export function createEngine({ escrow, baseUrl, dataFile, now = () => Date.now()
     touch(d); return { order_id: r.orderId, approve_url: r.approveUrl, mock: !!e.mock };
   }
 
-  async function completeFunding(id, orderId) {
+  const completeFunding = (...a) => locked(a[0], () => completeFundingImpl(...a));
+  async function completeFundingImpl(id, orderId) {
     const d = get(id);
     if (d.funding.status === 'authorized') return d;
     if (!orderId || orderId !== d.funding.order_id) throw new EngineError('WRONG_ORDER', 'That order does not belong to this deal', 409);
@@ -135,10 +140,9 @@ export function createEngine({ escrow, baseUrl, dataFile, now = () => Date.now()
   async function transition(d, ev) {
     let r;
     try { r = apply(d.state, ev); } catch (err) { if (err instanceof EscrowError) throw new EngineError(err.code, err.message, 409); throw err; }
-    const ctx = {};
+    const ctx = {}; const prev = d.state; d.state = r.state; // ledger rows snapshot the post-transition balance
     try { await runEffects(d, r.effects, ctx); }
-    catch (err) { row(d, 'state', { status: 'ERROR', note: `PayPal rejected ${ev.type}: ${String(err.message).slice(0, 160)}; deal state unchanged` }); touch(d); throw new EngineError('PAYPAL_ERROR', `PayPal could not complete the ${ev.type.toLowerCase()}: ${String(err.message).slice(0, 200)}`, 502); }
-    d.state = r.state;
+    catch (err) { d.state = prev; row(d, 'state', { status: 'ERROR', note: `PayPal rejected ${ev.type}: ${String(err.message).slice(0, 160)}; deal state unchanged` }); touch(d); throw new EngineError('PAYPAL_ERROR', `PayPal could not complete the ${ev.type.toLowerCase()}: ${String(err.message).slice(0, 200)}`, 502); }
     for (const fx of r.effects) if (fx.type === 'capture') await writeReceipt(d, fx.milestone_id);
     return r;
   }
@@ -150,7 +154,8 @@ export function createEngine({ escrow, baseUrl, dataFile, now = () => Date.now()
     return 'review';
   }
 
-  async function submit(id, mid, evidence = {}) {
+  const submit = (...a) => locked(a[0], () => submitImpl(...a));
+  async function submitImpl(id, mid, evidence = {}) {
     const d = get(id);
     if (d.state.status !== 'ACTIVE') throw new EngineError('BAD_STATE', 'The deal is not active', 409);
     const cm = d.contract.milestones.find((m) => m.id === mid); if (!cm) throw new EngineError('NOT_FOUND', `No milestone ${mid}`, 404);
@@ -184,7 +189,8 @@ export function createEngine({ escrow, baseUrl, dataFile, now = () => Date.now()
     if (d.state.status === 'COMPLETED') emit('deal.completed', d, { summary: 'All milestones released: deal complete' });
   }
 
-  async function review(id, mid, decision, note) {
+  const review = (...a) => locked(a[0], () => reviewImpl(...a));
+  async function reviewImpl(id, mid, decision, note) {
     const d = get(id);
     const sm = d.state.milestones.find((m) => m.id === mid); if (!sm) throw new EngineError('NOT_FOUND', `No milestone ${mid}`, 404);
     if (!['release', 'reject'].includes(decision)) throw new EngineError('BAD_INPUT', 'decision must be release or reject', 400);
@@ -196,7 +202,8 @@ export function createEngine({ escrow, baseUrl, dataFile, now = () => Date.now()
     touch(d); return toApi(d);
   }
 
-  async function cancel(id, reason) {
+  const cancel = (...a) => locked(a[0], () => cancelImpl(...a));
+  async function cancelImpl(id, reason) {
     const d = get(id);
     const before = remaining(d.state);
     await transition(d, { type: 'CANCEL' });
@@ -205,7 +212,8 @@ export function createEngine({ escrow, baseUrl, dataFile, now = () => Date.now()
     touch(d); return toApi(d);
   }
 
-  async function advanceClock(id, days) {
+  const advanceClock = (...a) => locked(a[0], () => advanceClockImpl(...a));
+  async function advanceClockImpl(id, days) {
     const d = get(id);
     if (d.state.status !== 'ACTIVE') throw new EngineError('BAD_STATE', 'The deal is not active', 409);
     const day = d.state.day + Math.max(0, Math.floor(days));
