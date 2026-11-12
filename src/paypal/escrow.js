@@ -8,7 +8,7 @@ import { LivePayPal } from './live.js';
 const live = (pp, call, ...args) => pp[call](...args);
 
 export class LiveEscrow {
-  constructor(pp) { this.pp = pp; this.mock = false; this.name = 'live'; }
+  constructor(pp, invoicePP) { this.pp = pp; this.ipp = invoicePP || pp; this.mock = false; this.name = 'live'; }
   meta(call) { const m = this.pp.lastMeta || {}; return { call: call || m.call, http_status: m.httpStatus, debug_id: m.debugId, mock: false }; }
   async createHold(a) { const r = await this.pp.createHoldOrder(a); return { ...r, meta: this.meta('POST /v2/checkout/orders (intent=AUTHORIZE)') }; }
   async authorize(orderId) { const r = await this.pp.authorizeOrder(orderId); return { ...r, meta: this.meta('POST /v2/checkout/orders/{id}/authorize') }; }
@@ -20,10 +20,10 @@ export class LiveEscrow {
   // receipts via Invoicing v2
   async receipt({ client, title, amountCents, currency, note, paidNote }) {
     const due = new Date().toISOString().slice(0, 10);
-    const inv = await this.pp.createInvoice({ client: { name: client.name, email: client.email || 'client@example.com' }, items: [{ description: title, quantity: 1, unitPrice: amountCents / 100 }], dueDate: due, note });
-    const m1 = this.meta('POST /v2/invoicing/invoices');
-    await this.pp.sendInvoice(inv.id, { toRecipient: false });
-    const paid = await this.pp.recordPayment(inv.id, { amount: amountCents / 100, method: 'PAYPAL', note: paidNote });
+    const inv = await this.ipp.createInvoice({ client: { name: client.name, email: client.email || 'client@example.com' }, items: [{ description: title, quantity: 1, unitPrice: amountCents / 100 }], dueDate: due, note });
+    const m1 = { call: 'POST /v2/invoicing/invoices', http_status: 201, debug_id: this.ipp.lastMeta?.debugId, mock: false };
+    await this.ipp.sendInvoice(inv.id, { toRecipient: false });
+    const paid = await this.ipp.recordPayment(inv.id, { amount: amountCents / 100, method: 'PAYPAL', note: paidNote });
     return { invoiceId: paid.id, number: paid.number, status: paid.status, meta: { ...m1, mock: false } };
   }
 }

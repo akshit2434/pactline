@@ -3,6 +3,7 @@ import path from 'node:path';
 import { config } from './config.js';
 import { createPayPal } from './paypal/index.js';
 import { LiveEscrow, MockEscrow } from './paypal/escrow.js';
+import { LivePayPal } from './paypal/live.js';
 import { createEngine, EngineError } from './engine.js';
 import { aiStatus, explainEvent } from './ai/index.js';
 import { verifyContract } from './core/verify.js';
@@ -11,7 +12,8 @@ import { DEMO_TEXT, demoContract } from './demo.js';
 
 const pp = await createPayPal().catch((e) => { console.error('[paypal] live setup failed, using mock:', e.message.slice(0, 200)); return null; });
 const live = pp && pp.mode === 'live';
-const escrow = live ? new LiveEscrow(pp) : new MockEscrow();
+const invPP = live && config.paypal.invoicingClientId && config.paypal.invoicingClientId !== config.paypal.clientId ? new LivePayPal({ ...config.paypal, clientId: config.paypal.invoicingClientId, clientSecret: config.paypal.invoicingClientSecret, currency: 'USD' }) : null;
+const escrow = live ? new LiveEscrow(pp, invPP) : new MockEscrow();
 const engine = createEngine({ escrow, baseUrl: config.publicBaseUrl, dataFile: path.join(config.dataDir, 'pactline-state.json') });
 
 const app = express();

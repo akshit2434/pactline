@@ -20,11 +20,13 @@ function loadEnvFile(file, only) {
 loadEnvFile(path.join(root, '.env'));
 loadEnvFile(path.join(root, '.env.local'));
 // KEYS_FILE may be a shared secrets file: only pick up the names this app needs.
-loadEnvFile(process.env.KEYS_FILE, /^(PAYPAL_(US_)?SANDBOX_[A-Z_]+|PAYPAL_WEBHOOK_ID|ANTHROPIC_API_KEY)$/);
+loadEnvFile(process.env.KEYS_FILE, /^(PAYPAL_(US_)?SANDBOX_[A-Z_]+|PAYPAL_INVOICING_[A-Z_]+|PAYPAL_WEBHOOK_ID|ANTHROPIC_API_KEY)$/);
 
 const env = process.env;
 // Optional override for hosts that keep several sandbox apps in one keys file (e.g. an India-based default app plus a US one).
 if (env.PAYPAL_US_SANDBOX_CLIENT_ID && env.PAYPAL_US_SANDBOX_CLIENT_SECRET) {
+  // keep the original app for Invoicing receipts if it is the one with the Invoicing feature enabled
+  if (!env.PAYPAL_INVOICING_CLIENT_ID && env.PAYPAL_SANDBOX_CLIENT_ID) { env.PAYPAL_INVOICING_CLIENT_ID = env.PAYPAL_SANDBOX_CLIENT_ID; env.PAYPAL_INVOICING_CLIENT_SECRET = env.PAYPAL_SANDBOX_CLIENT_SECRET; }
   env.PAYPAL_SANDBOX_CLIENT_ID = env.PAYPAL_US_SANDBOX_CLIENT_ID; env.PAYPAL_SANDBOX_CLIENT_SECRET = env.PAYPAL_US_SANDBOX_CLIENT_SECRET;
   if (env.PAYPAL_US_SANDBOX_BUYER_EMAIL) { env.PAYPAL_SANDBOX_BUYER_EMAIL = env.PAYPAL_US_SANDBOX_BUYER_EMAIL; env.PAYPAL_SANDBOX_BUYER_PASSWORD = env.PAYPAL_US_SANDBOX_BUYER_PASSWORD; }
 }
@@ -41,6 +43,9 @@ export const config = {
     clientId: env.PAYPAL_SANDBOX_CLIENT_ID,
     clientSecret: env.PAYPAL_SANDBOX_CLIENT_SECRET,
     baseUrl: 'https://api-m.sandbox.paypal.com',
+    // optional second app used only for Invoicing v2 receipts (defaults to the main app)
+    invoicingClientId: env.PAYPAL_INVOICING_CLIENT_ID || env.PAYPAL_SANDBOX_CLIENT_ID,
+    invoicingClientSecret: env.PAYPAL_INVOICING_CLIENT_SECRET || env.PAYPAL_SANDBOX_CLIENT_SECRET,
   },
   preferredCurrency: (env.CURRENCY || 'USD').toUpperCase(),
   llm: {
