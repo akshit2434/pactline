@@ -14,7 +14,8 @@ Trust boundary:
 
 Process:
 1. observations: what you actually see, one entry per item (source "image:1", "document:1", "text_file:1", "note" or "url"). Describe what is visible; do not assume what you cannot see.
-2. criteria_check: split the acceptance criteria into each concrete requirement and mark it yes, no or cannot_tell, using only your observations.
+2. criteria_check: split the acceptance criteria into each concrete requirement and mark it yes, no or cannot_tell, using only your observations. For each one, clause = the exact words from the <milestone> criteria it comes from (copied verbatim, never from the submission), seen = what the evidence shows for it in at most 15 words.
+   Judge what the evidence depicts, not how it was produced: a photo, scan, rendering or screenshot of the item counts as "a photo" unless the criteria explicitly require proof of authenticity (time stamp, location, camera metadata).
 3. verdict:
    - pass: every requirement is visibly met by the evidence.
    - fail: the evidence shows the work is incomplete or wrong: a required element is clearly missing, the delivery is partial (fewer items, fewer pages, unfinished), it shows a different subject than the criteria describe, or it shows an error page.
@@ -103,7 +104,7 @@ export function shapeVerdict(data, { by, model, preInjection }) {
     reason = 'The proof contains instructions aimed at the reviewer, so a person should check it before payment.';
   }
   const evidence = (data.observations || []).map((o) => ({ source: o.source, observation: o.observation }));
-  const checks = (data.criteria_check || []).map((c) => ({ requirement: c.requirement, met: c.met }));
+  const checks = (data.criteria_check || []).map((c) => ({ requirement: c.requirement, clause: String(c.clause || c.requirement || '').slice(0, 240), seen: String(c.seen || '').slice(0, 160), met: c.met }));
   return { verdict, confidence: Math.round(confidence * 100) / 100, reason, reasons: [reason], evidence, checks, injection_detected: injection, by, model };
 }
 
@@ -117,7 +118,7 @@ export async function checkProof(input, opts = {}) {
   if (opts.forceFallback || !hasKey()) return fallbackCheck(input);
 
   const run = async (model, effort) => {
-    const r = await callJSON({ model, system: JUDGE_SYSTEM, content: buildContent(input, files), schema: VERDICT_SCHEMA, effort, maxTokens: 6000, timeoutMs: opts.timeoutMs || 60_000 });
+    const r = await callJSON({ model, system: JUDGE_SYSTEM, content: buildContent(input, files), schema: VERDICT_SCHEMA, effort, maxTokens: 6000, timeoutMs: opts.timeoutMs || 150_000 });
     return { ...shapeVerdict(r.data, { by: 'claude-vision', model: r.model, preInjection }), usage: r.usage };
   };
   try {

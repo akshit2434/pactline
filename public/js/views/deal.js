@@ -121,7 +121,7 @@ export function mount(root, { id }) {
   function item(m, i, active) {
     const st = statusOf(m);
     const node = h('span', { class: 'node' }, st === 'RELEASED' ? ic('check', 20) : st === 'CHECKING' ? h('span', { class: 'spinner' }) : st === 'NEEDS_REVIEW' || st === 'AWAITING_CONFIRMATION' ? ic('pause', 18) : st === 'REJECTED' ? ic('x', 18) : st === 'VOIDED' ? ic('undo', 16) : String(i + 1));
-    const metaBits = [h('span', { class: 'state-chip ' + st }, STATE_LABEL[st] || st), h('span', { style: { display: 'inline-flex', gap: '6px', alignItems: 'center' } }, ic(ORACLE_ICON[m.oracle.type] || 'check', 14), ORACLE_LABEL[m.oracle.type])];
+    const metaBits = [h('span', { class: 'state-chip ' + st }, st === 'NEEDS_REVIEW' && m.dispute ? 'Disputed' : (STATE_LABEL[st] || st)), h('span', { style: { display: 'inline-flex', gap: '6px', alignItems: 'center' } }, ic(ORACLE_ICON[m.oracle.type] || 'check', 14), ORACLE_LABEL[m.oracle.type])];
     if (st === 'RELEASED' && m.released_at) metaBits.push(h('span', null, fmtTime(m.released_at)));
     if (m.verdict && ['RELEASED', 'NEEDS_REVIEW', 'REJECTED', 'AWAITING_CONFIRMATION'].includes(st)) metaBits.unshift(verdictChip(m.verdict));
     const body = h('div', { class: 'ms-body' }, h('div', { class: 'ms-top' }, h('span', { class: 't' }, m.title), h('span', { class: 'a' }, money(m.amount_cents, { compact: true }))), h('div', { class: 'ms-meta' }, metaBits));
@@ -135,7 +135,11 @@ export function mount(root, { id }) {
     const cls = v.verdict === 'pass' ? 'pass' : v.verdict === 'fail' ? 'fail' : 'unclear';
     const label = (v.verdict === 'pass' ? 'Passed' : v.verdict === 'fail' ? 'Failed' : 'Unclear') + (v.confidence != null && v.by !== 'url-oracle' && v.by !== 'human' ? ` · ${Math.round(v.confidence * 100)}%` : '');
     const btn = h('button', { type: 'button', 'aria-label': 'Why? ' + label }, ic(v.verdict === 'pass' ? 'check' : 'sparkle', 14), label);
-    const content = () => [h('h4', null, 'Why'), h('ul', null, (v.reasons || []).map((r) => h('li', null, ic('check', 16), r))), h('p', { style: { color: 'var(--ink-3)', fontSize: '13px' } }, 'Checked by ' + (BY[v.by] || v.by))];
+    const checks = (v.checks || []).filter((k) => k.clause);
+    const content = () => [h('h4', null, 'Why'), h('ul', null, (v.reasons || []).map((r) => h('li', null, ic('check', 16), r))),
+      checks.length ? h('h4', null, 'Brief clause → seen → result') : null,
+      checks.length ? h('ol', { class: 'clauses' }, checks.map((k) => h('li', null, h('q', null, k.clause), h('span', null, k.seen || '—'), h('b', { class: 'res ' + k.met }, k.met === 'yes' ? 'Pass' : k.met === 'no' ? 'Fail' : 'Can\'t tell')))) : null,
+      v.reused ? h('p', { class: 'dispute-tag' }, 'Same file was used as proof elsewhere') : null, h('p', { style: { color: 'var(--ink-3)', fontSize: '13px' } }, 'Checked by ' + (BY[v.by] || v.by))];
     return h('span', { class: 'verdict ' + cls }, popover(btn, content));
   }
 

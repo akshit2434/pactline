@@ -68,7 +68,7 @@ export const VERDICT_SCHEMA = {
     },
     criteria_check: {
       type: 'array',
-      items: { type: 'object', additionalProperties: false, required: ['requirement', 'met'], properties: { requirement: str, met: { type: 'string', enum: ['yes', 'no', 'cannot_tell'] } } },
+      items: { type: 'object', additionalProperties: false, required: ['requirement', 'clause', 'seen', 'met'], properties: { requirement: str, clause: str, seen: str, met: { type: 'string', enum: ['yes', 'no', 'cannot_tell'] } } },
     },
     injection_detected: { type: 'boolean' },
     verdict: { type: 'string', enum: ['pass', 'fail', 'unclear'] },

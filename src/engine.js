@@ -11,10 +11,10 @@ import { MockEscrow } from './paypal/escrow.js';
 
 /** Deterministic, neutral dispute summary shown to both parties (no model involved). */
 export function disputeSummary(cm, x) {
-  const v = x.verdict || {}; const dp = x.dispute || {};
-  const checker = v.verdict ? `The checker said ${v.verdict} (${Math.round((v.confidence || 0) * 100)}% confident): ${(v.reasons || [])[0] || 'no reason given'}.` : 'No automatic check ran.';
+  const v = x.verdict || {}; const dp = x.dispute || {}; const q = (t) => String(t || '').replace(/[.\s]+$/, '');
+  const checker = v.verdict ? `The checker said ${v.verdict} (${Math.round((v.confidence || 0) * 100)}% confident): ${q((v.reasons || [])[0]) || 'no reason given'}.` : 'No automatic check ran.';
   return {
-    summary: `Dispute on "${cm.title}". Criterion in question: "${dp.criterion}". Client's reason: "${dp.reason}". ${checker} Money stays held until this is resolved.`,
+    summary: `Dispute on "${cm.title}". Criterion in question: "${dp.criterion}". Client's reason: "${q(dp.reason)}". ${checker} Money stays held until this is resolved.`,
     for_freelancer: `The client says this criterion is not met: "${dp.criterion}". Send proof that shows it, or agree a fix.`,
     for_client: `You disputed "${dp.criterion}". Release if new proof meets it; otherwise reject and the money stays held.`,
   };
@@ -37,6 +37,20 @@ export function createEngine({ escrow, baseUrl, dataFile, now = () => Date.now()
   if (dataFile && fs.existsSync(dataFile)) {
     try { const s = JSON.parse(fs.readFileSync(dataFile, 'utf8')); (s.deals || []).forEach((d) => deals.set(d.id, d)); ledger.push(...(s.ledger || [])); evId = s.evId || 0; ledgerId = s.ledgerId || 0; } catch { /* ignore */ }
   }
+
+  // sha256 fingerprints of submitted proof files/notes: the same proof reused on another milestone or deal is flagged
+  const proofFingerprint = (ev) => {
+    const parts = [ev.image_data_url, ev.file_data_url].filter(Boolean);
+    if (!parts.length) return null;
+    return crypto.createHash('sha256').update(parts.join('|')).digest('hex');
+  };
+  const priorUse = (fp, dealId, mid) => {
+    if (!fp) return null;
+    for (const d of deals.values()) for (const [m, x] of Object.entries(d.ms || {})) {
+      if (x?.evidence?.sha256 === fp && !(d.id === dealId && m === mid)) return { deal_id: d.id, milestone_id: m, same_deal: d.id === dealId };
+    }
+    return null;
+  };
 
   const esc = (d) => (d.mock ? mockEscrow : escrow);
   // one operation at a time per deal: two clicks can never release the same milestone twice
@@ -173,12 +187,14 @@ export function createEngine({ escrow, baseUrl, dataFile, now = () => Date.now()
     const cm = d.contract.milestones.find((m) => m.id === mid); if (!cm) throw new EngineError('NOT_FOUND', `No milestone ${mid}`, 404);
     const sm = d.state.milestones.find((m) => m.id === mid);
     for (const dep of sm.depends_on) if (d.state.milestones.find((m) => m.id === dep).status !== 'RELEASED') throw new EngineError('DEPENDENCY', `${mid} can only be submitted after ${dep} is released`, 409);
+    const fp = proofFingerprint(evidence); const reused = priorUse(fp, id, mid);
     d.state = (await transition(d, { type: 'SUBMIT', id: mid })).state;
-    d.ms[mid] = { ...(d.ms[mid] || {}), evidence: { text: evidence.text || null, url: evidence.url || null, has_image: !!evidence.image_data_url, submitted_at: new Date(now()).toISOString() }, review: null };
+    d.ms[mid] = { ...(d.ms[mid] || {}), evidence: { text: evidence.text || null, url: evidence.url || null, has_image: !!evidence.image_data_url, sha256: fp, reused_from: reused, submitted_at: new Date(now()).toISOString() }, review: null };
     emit('milestone.checking', d, { milestone_id: mid, summary: `${mid} submitted: checking "${cm.title}"` });
     touch(d);
     const v = await runOracle(cm, evidence, ai);
-    d.ms[mid].verdict = { verdict: v.verdict, confidence: v.confidence, reasons: v.reasons, by: v.by, injection_detected: !!v.injection_detected };
+    if (reused && v.verdict === 'pass') { v.verdict = 'unclear'; v.confidence = Math.min(v.confidence, 0.5); v.reasons = [`This exact file was already submitted for ${reused.same_deal ? `milestone ${reused.milestone_id}` : 'another deal'}, so a person should check it before payment.`, ...(v.reasons || [])]; }
+    d.ms[mid].verdict = { verdict: v.verdict, confidence: v.confidence, reasons: v.reasons, by: v.by, injection_detected: !!v.injection_detected, checks: Array.isArray(v.checks) ? v.checks.slice(0, 12) : [], reused: !!reused };
     row(d, v.by === 'claude-vision' || v.by === 'heuristic' ? 'judge' : 'oracle', { milestone_id: mid, status: v.verdict.toUpperCase(), note: `${v.by}: ${v.verdict} (${Math.round(v.confidence * 100)}%): ${v.reasons[0]}` });
     const outcome = pickOutcome(v);
     if (outcome === 'release' && confirmDays > 0) {

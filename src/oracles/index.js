@@ -104,5 +104,5 @@ export async function runOracle(milestone, evidence = {}, hooks = {}) {
   if (evidence.url && !evidence.image_data_url && urlish) return urlOracle({ url: evidence.url, contains: o.contains });
   const files = evidence.image_data_url ? [{ data_url: evidence.image_data_url }] : undefined;
   const v = await (hooks.checkProof || checkProof)({ milestone, text: evidence.text, url: evidence.url, files });
-  return { verdict: v.verdict, confidence: v.confidence, reasons: v.reasons?.length ? v.reasons : [v.reason], by: v.by, injection_detected: v.injection_detected, evidence: v.evidence, model: v.model };
+  return { verdict: v.verdict, confidence: v.confidence, reasons: v.reasons?.length ? v.reasons : [v.reason], by: v.by, injection_detected: v.injection_detected, evidence: v.evidence, checks: v.checks || [], model: v.model };
 }

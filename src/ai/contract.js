@@ -19,7 +19,7 @@ Rules:
   - url: a site, page, app or endpoint is live or deployed. Put the URL in oracle.url if the text gives one (else null), and text that must appear on the page in oracle.contains if stated.
   - github_pr: a pull request is merged. Needs repo "owner/name" and the PR number; if either is missing use evidence instead.
   - deadline: time passing ("after 7 days", "14 days with no bugs reported"). after_days = the number of days; after = the id of the milestone it counts from, or null if it counts from funding.
-  - manual: the client signs off, approves or accepts in a meeting.
+  - manual: the client signs off, approves or accepts in a meeting. Money due "upfront", "on signing" or "at kickoff" is manual (the client releases it once the deal starts), never a deadline timer.
   - evidence: anything shown with a photo, screenshot, file, document, report or video.
   Unused oracle fields are null.
 - proof_type: url, github_pr, photo, screenshot, document, time (deadline) or client_approval (manual). Use photo for physical goods or on-site work, screenshot for software or design, document for files and reports.
@@ -45,7 +45,7 @@ export async function draftContract(text, opts = {}) {
   const model = opts.model || DEFAULT_MODEL;
   const system = systemPrompt(now.toISOString().slice(0, 10));
   const ask = async (extra) => callJSON({
-    model, system, schema: CONTRACT_SCHEMA, effort: DEFAULT_EFFORT, maxTokens: 8000, timeoutMs: opts.timeoutMs || 60_000,
+    model, system, schema: CONTRACT_SCHEMA, effort: DEFAULT_EFFORT, maxTokens: 8000, timeoutMs: opts.timeoutMs || 150_000,
     content: [{ type: 'text', text: `<deal_text>\n${text.trim()}\n</deal_text>${extra || ''}` }],
   });
 

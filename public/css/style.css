@@ -136,7 +136,8 @@ kbd { font: 600 11px var(--mono); border: 1px solid var(--line-2); border-bottom
 .verified.anim button .ic { animation: pop .5s var(--spring) both; }
 .pop { position: absolute; z-index: 15; top: calc(100% + 10px); left: 0; width: min(320px, calc(100vw - 16px)); max-width: calc(100vw - 16px); box-sizing: border-box; overflow-wrap: anywhere; word-break: break-word; padding: 16px; display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow-lg); animation: rise .24s var(--ease) both; font-size: 14px; color: var(--ink-2); }
 .pop.right { left: auto; right: 0; }
-.pop li { list-style: none; display: flex; gap: 8px; align-items: flex-start; }
+.pop > * { min-width: 0; }
+.pop li { min-width: 0; list-style: none; display: flex; gap: 8px; align-items: flex-start; }
 .pop ul { margin: 0; padding: 0; display: grid; gap: 8px; }
 .pop li .ic { color: var(--green); margin-top: 2px; }
 .pop h4 { margin: 0; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
@@ -551,3 +552,7 @@ body.demo-on .site-foot { display: none; }
 .review-box .for-role { font-size: 13px; color: var(--ink-3); }
 .field-error { color: var(--red, #b42318); font-size: 13px; min-height: 1em; }
 #dispute-criterion, #dispute-reason { width: 100%; box-sizing: border-box; font: inherit; padding: 10px; border: 1px solid var(--line); border-radius: var(--r-sm, 8px); background: var(--surface); color: var(--ink); }
+.pop .clauses { margin: 0; padding: 0; display: grid; gap: 8px; }
+.pop .clauses li { display: grid; gap: 2px; list-style: none; font-size: 13px; }
+.pop .clauses q { color: var(--ink); font-style: italic; }
+.pop .clauses .res { font-size: 12px; } .pop .clauses .res.yes { color: var(--green); } .pop .clauses .res.no { color: var(--red, #b42318); } .pop .clauses .res.cannot_tell { color: var(--amber); }
