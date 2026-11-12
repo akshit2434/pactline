@@ -53,8 +53,8 @@ export const config = {
   llm: {
     provider: (env.LLM_PROVIDER || 'auto').toLowerCase(),
     anthropicKey: env.ANTHROPIC_API_KEY,
-    model: env.ANTHROPIC_MODEL || 'claude-sonnet-5-5',
-    cliModel: env.CLAUDE_CLI_MODEL || 'claude-sonnet-5-5',
+    model: env.ANTHROPIC_MODEL || 'claude-haiku-5-5',
+    cliModel: env.CLAUDE_CLI_MODEL || 'claude-haiku-5-5',
   },
   dataDir: env.PACTLINE_DATA_DIR ? path.resolve(env.PACTLINE_DATA_DIR) : path.join(root, 'data'),
   // PACTLINE_PUBLIC=1: hardened public demo (rate limits, Claude caps, upload checks, headers, per-visitor deals). See src/public/.

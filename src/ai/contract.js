@@ -1,5 +1,5 @@
 // draftContract: plain-English deal -> API.md Contract, via Claude structured outputs, with a rule-based fallback.
-import { callJSON, hasKey, AiUnavailable, AiInputError, DEFAULT_MODEL } from './client.js';
+import { callJSON, hasKey, AiUnavailable, AiInputError, DEFAULT_MODEL, DEFAULT_EFFORT } from './client.js';
 import { CONTRACT_SCHEMA, toContract, validateContract, fmt } from './schema.js';
 
 const DAY = 86_400_000;
@@ -45,7 +45,7 @@ export async function draftContract(text, opts = {}) {
   const model = opts.model || DEFAULT_MODEL;
   const system = systemPrompt(now.toISOString().slice(0, 10));
   const ask = async (extra) => callJSON({
-    model, system, schema: CONTRACT_SCHEMA, effort: 'medium', maxTokens: 8000, timeoutMs: opts.timeoutMs || 60_000,
+    model, system, schema: CONTRACT_SCHEMA, effort: DEFAULT_EFFORT, maxTokens: 8000, timeoutMs: opts.timeoutMs || 60_000,
     content: [{ type: 'text', text: `<deal_text>\n${text.trim()}\n</deal_text>${extra || ''}` }],
   });
 

@@ -1,6 +1,6 @@
 // checkProof: is this milestone done? Claude vision judges photos, screenshots and documents against
 // the acceptance criteria. Everything the payee submits is untrusted data, never instructions.
-import { callJSON, hasKey, AiUnavailable, AiInputError, DEFAULT_MODEL, ESCALATE_MODEL } from './client.js';
+import { callJSON, hasKey, AiUnavailable, AiInputError, DEFAULT_MODEL, ESCALATE_MODEL, DEFAULT_EFFORT } from './client.js';
 import { VERDICT_SCHEMA } from './schema.js';
 
 const IMAGE_TYPES = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
@@ -121,9 +121,9 @@ export async function checkProof(input, opts = {}) {
     return { ...shapeVerdict(r.data, { by: 'claude-vision', model: r.model, preInjection }), usage: r.usage };
   };
   try {
-    let res = await run(opts.model || DEFAULT_MODEL, 'medium');
+    let res = await run(opts.model || DEFAULT_MODEL, DEFAULT_EFFORT);
     if (opts.escalate && (res.verdict === 'unclear' || res.confidence < 0.7) && res.model !== ESCALATE_MODEL) {
-      try { res = { ...(await run(ESCALATE_MODEL, 'high')), escalated: true }; } catch (e) { if (!(e instanceof AiUnavailable)) throw e; }
+      try { res = { ...(await run(ESCALATE_MODEL, DEFAULT_EFFORT)), escalated: true }; } catch (e) { if (!(e instanceof AiUnavailable)) throw e; }
     }
     return res;
   } catch (e) {

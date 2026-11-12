@@ -2,8 +2,10 @@
 // except AiUnavailable (caller falls back).
 import Anthropic from '@anthropic-ai/sdk';
 
-export const DEFAULT_MODEL = process.env.PACTLINE_AI_MODEL || 'claude-sonnet-5-5';
-export const ESCALATE_MODEL = process.env.PACTLINE_AI_ESCALATE_MODEL || 'claude-opus-5-5';
+export const DEFAULT_MODEL = process.env.PACTLINE_AI_MODEL || 'claude-haiku-5-5';
+export const ESCALATE_MODEL = process.env.PACTLINE_AI_ESCALATE_MODEL || 'claude-haiku-5-5';
+// Highest effort the API accepts for Haiku 5.5 (probed live: max). Override with PACTLINE_AI_EFFORT.
+export const DEFAULT_EFFORT = process.env.PACTLINE_AI_EFFORT || 'max';
 
 export class AiUnavailable extends Error {
   constructor(message, cause) { super(message); this.name = 'AiUnavailable'; this.cause = cause; }
@@ -31,14 +33,14 @@ function getClient() {
  * One Messages API call constrained to a JSON schema. Returns { data, model, usage }.
  * Uses server-side refusal fallbacks ("default" routing) so a safety decline is retried on a suitable model.
  */
-export async function callJSON({ model = DEFAULT_MODEL, system, content, schema, effort = 'medium', maxTokens = 8000, timeoutMs = 60_000 }) {
+export async function callJSON({ model = DEFAULT_MODEL, system, content, schema, effort = DEFAULT_EFFORT, maxTokens = 8000, timeoutMs = 60_000 }) {
   const c = getClient();
   if (callGate) callGate({ model });
   let res;
   try {
     res = await c.beta.messages.create({
       model,
-      max_tokens: maxTokens,
+      max_tokens: Math.max(maxTokens, 16000),
       betas: ['server-side-fallback-2026-07-01'],
       fallbacks: 'default',
       system,
