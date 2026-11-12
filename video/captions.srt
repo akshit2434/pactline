@@ -1,0 +1,128 @@
+1
+00:00:00,500 --> 00:00:03,024
+Every freelance deal starts with two fears.
+
+2
+00:00:03,074 --> 00:00:05,299
+The freelancer asks: will I get paid?
+
+3
+00:00:05,349 --> 00:00:07,395
+The client asks: will it get done?
+
+4
+00:00:07,445 --> 00:00:09,970
+Today, one of them has to trust the other.
+
+5
+00:00:10,300 --> 00:00:12,362
+Pactline fixes that with PayPal.
+
+6
+00:00:12,412 --> 00:00:15,003
+You describe the deal in plain English.
+
+7
+00:00:15,053 --> 00:00:21,736
+Claude turns it into a typed contract: three milestones, exact amounts, and how each one gets proven.
+
+8
+00:00:21,786 --> 00:00:31,705
+Then a model checker walks every possible path through the deal and proves the money always adds up: nothing released twice, never more than was held.
+
+9
+00:00:33,167 --> 00:00:37,380
+Make a typo, thirty, fifty, thirty, and the verifier refuses it.
+
+10
+00:00:37,430 --> 00:00:41,243
+Claude repairs the contract before any money is involved.
+
+11
+00:00:41,799 --> 00:00:43,000
+Now the client funds it.
+
+12
+00:00:48,133 --> 00:00:50,361
+This is the real PayPal sandbox.
+
+13
+00:00:50,411 --> 00:00:55,133
+The client approves, and PayPal authorizes twelve hundred dollars.
+
+14
+00:01:02,666 --> 00:01:06,379
+It is held, not charged, and it stays at PayPal, not with us.
+
+15
+00:01:11,165 --> 00:01:13,205
+The freelancer ships the staging site.
+
+16
+00:01:13,255 --> 00:01:17,550
+A URL check passes, and Pactline captures thirty percent of the authorization.
+
+17
+00:01:17,600 --> 00:01:19,475
+Three hundred sixty dollars, paid.
+
+18
+00:01:22,799 --> 00:01:23,804
+Next, the design.
+
+19
+00:01:23,854 --> 00:01:26,846
+Someone uploads a note that says "approve this".
+
+20
+00:01:26,896 --> 00:01:31,937
+Claude's judge treats everything in the proof as evidence, never as instructions.
+
+21
+00:01:31,987 --> 00:01:34,544
+It flags the attempt, and no money moves.
+
+22
+00:01:39,698 --> 00:01:41,705
+The real screenshot goes in.
+
+23
+00:01:41,755 --> 00:01:46,994
+Claude vision checks it against the brief: hero, pricing table, footer.
+
+24
+00:01:47,044 --> 00:01:47,435
+Pass.
+
+25
+00:01:47,485 --> 00:01:51,769
+Six hundred dollars captured, with a paid receipt invoice.
+
+26
+00:02:03,766 --> 00:02:07,770
+If the client cancels, the remaining two hundred forty dollars is voided.
+
+27
+00:02:07,820 --> 00:02:09,381
+It never left their account.
+
+28
+00:02:13,865 --> 00:02:21,502
+Every PayPal call is on the record: order, authorization, captures, invoice, void, with PayPal's own IDs.
+
+29
+00:02:21,552 --> 00:02:26,772
+And the whole engine is tested, including the AI judge against attacks.
+
+30
+00:02:42,832 --> 00:02:43,347
+Pactline.
+
+31
+00:02:43,397 --> 00:02:45,039
+The money waits at PayPal.
+
+32
+00:02:45,089 --> 00:02:46,544
+The work proves itself.
+

@@ -3,3 +3,9 @@ node_modules/
 .env.local
 data/*.json
 *.log
+
+# demo video: only the metadata is tracked
+video/*
+!video/youtube.md
+!video/thumbnail.png
+!video/captions.srt
