@@ -134,7 +134,7 @@ kbd { font: 600 11px var(--mono); border: 1px solid var(--line-2); border-bottom
 .verified { position: relative; display: inline-flex; flex: none; white-space: nowrap; }
 .verified button { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px 7px 10px; border-radius: 999px; background: var(--green-50); color: var(--green); border: 1px solid color-mix(in srgb, var(--green) 25%, transparent); font-weight: 700; font-size: 13px; }
 .verified.anim button .ic { animation: pop .5s var(--spring) both; }
-.pop { position: absolute; z-index: 15; top: calc(100% + 10px); left: 0; width: min(320px, calc(100vw - 16px)); max-width: calc(100vw - 16px); box-sizing: border-box; overflow-wrap: anywhere; word-break: break-word; padding: 16px; display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow-lg); animation: rise .24s var(--ease) both; font-size: 14px; color: var(--ink-2); }
+.pop { position: absolute; z-index: 15; top: calc(100% + 10px); left: 0; width: min(320px, calc(100vw - 16px)); max-width: calc(100vw - 16px); box-sizing: border-box; overflow-wrap: anywhere; word-break: break-word; white-space: normal; text-align: left; padding: 16px; display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow-lg); animation: rise .24s var(--ease) both; font-size: 14px; color: var(--ink-2); }
 .pop.right { left: auto; right: 0; }
 .pop > * { min-width: 0; }
 .pop li { min-width: 0; list-style: none; display: flex; gap: 8px; align-items: flex-start; }
