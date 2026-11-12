@@ -9,3 +9,5 @@ video/*
 !video/youtube.md
 !video/thumbnail.png
 !video/captions.srt
+
+DEVPOST*.md
