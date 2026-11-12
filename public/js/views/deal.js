@@ -142,7 +142,7 @@ export function mount(root, { id }) {
       } else box.append(h('div', { class: 'waiting' }, h('span', { class: 'spinner' }), `Waiting for ${c.client.name} to look`));
       return box;
     }
-    if (st !== 'PENDING' || !active || deal.status !== 'ACTIVE') return null;
+    if (!['PENDING', 'REJECTED'].includes(st) || !active || deal.status !== 'ACTIVE') return null;
     const o = m.oracle;
     if (o.type === 'manual') {
       return role === 'client'
