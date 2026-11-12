@@ -2,7 +2,7 @@
 import { hasKey, DEFAULT_MODEL, AiInputError } from './client.js';
 
 export { draftContract, fallbackDraft } from './contract.js';
-export { checkProof, fallbackCheck, scanInjection } from './proof.js';
+export { checkProof, fallbackCheck, scanInjection, shapeVerdict } from './proof.js';
 export { explainEvent, explainTemplate } from './explain.js';
 export { validateContract, toContract, CONTRACT_SCHEMA, VERDICT_SCHEMA } from './schema.js';
 export { AiInputError };

@@ -139,7 +139,7 @@ function oracleFor(clause, prevId) {
   }
   const pr = clause.match(/(?:github\.com\/)?([\w.-]+\/[\w.-]+)(?:\/pull\/|\s*#|\s+pr\s*#?)(\d+)/i);
   if (/\b(?:pr|pull request|merged)\b/.test(c) && pr) return { oracle: { type: 'github_pr', repo: pr[1], number: Number(pr[2]) }, proof: 'github_pr' };
-  if (/\b(?:sign[- ]?off|signs off|approves?|approval|accepts?|acceptance)\b/.test(c)) return { oracle: { type: 'manual' }, proof: 'client_approval' };
+  if (/\b(?:sign[- ]?off|signs off|signing|signed|approves?|approval|accepts?|acceptance)\b/.test(c)) return { oracle: { type: 'manual' }, proof: 'client_approval' };
   const url = clause.match(/https?:\/\/[^\s,;)]+/i);
   if (url || /\b(?:url|site|website|page|app|endpoint|api|staging|deployed|live|launch(?:ed)?|online)\b/.test(c)) {
     if (!/\b(?:photo|screenshot|mockup|design|figma)\b/.test(c) || url) {

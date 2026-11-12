@@ -81,12 +81,20 @@ function buildContent(input, files) {
   return content;
 }
 
+// UI contract: one short sentence. Keep the first sentence if the model wrote more.
+function firstSentence(t) {
+  const s = String(t || '').replace(/\s+/g, ' ').trim();
+  const m = s.match(/^.+?[.!?](?=\s|$)/);
+  const one = m ? m[0] : s;
+  return one.length > 220 ? `${one.slice(0, 217).trim()}...` : one;
+}
+
 const clamp = (n) => (Number.isFinite(n) ? Math.min(1, Math.max(0, n)) : 0.5);
 
-function shape(data, { by, model, preInjection }) {
+export function shapeVerdict(data, { by, model, preInjection }) {
   let verdict = data.verdict;
   let confidence = clamp(data.confidence);
-  let reason = String(data.reason || '').trim() || 'No reason given.';
+  let reason = firstSentence(data.reason) || 'No reason given.';
   const injection = Boolean(data.injection_detected) || Boolean(preInjection);
   // Hard rule, enforced in code: text that tries to steer the judge can never release money by itself.
   if (injection && verdict === 'pass') {
@@ -104,13 +112,13 @@ export async function checkProof(input, opts = {}) {
   const files = normalizeFiles(input);
   const preInjection = scanInjection(input.text) || files.some((f) => f.media_type.startsWith('text/') && scanInjection(Buffer.from(f.data, 'base64').toString('utf8')));
   if (!files.length && !input.text && !input.url) {
-    return shape({ verdict: 'unclear', confidence: 0.2, reason: 'No proof was submitted.', observations: [], criteria_check: [] }, { by: 'heuristic', model: null, preInjection: false });
+    return shapeVerdict({ verdict: 'unclear', confidence: 0.2, reason: 'No proof was submitted.', observations: [], criteria_check: [] }, { by: 'heuristic', model: null, preInjection: false });
   }
   if (opts.forceFallback || !hasKey()) return fallbackCheck(input);
 
   const run = async (model, effort) => {
     const r = await callJSON({ model, system: JUDGE_SYSTEM, content: buildContent(input, files), schema: VERDICT_SCHEMA, effort, maxTokens: 6000, timeoutMs: opts.timeoutMs || 60_000 });
-    return { ...shape(r.data, { by: 'claude-vision', model: r.model, preInjection }), usage: r.usage };
+    return { ...shapeVerdict(r.data, { by: 'claude-vision', model: r.model, preInjection }), usage: r.usage };
   };
   try {
     let res = await run(opts.model || DEFAULT_MODEL, 'medium');
@@ -136,18 +144,18 @@ export function fallbackCheck(input) {
   const note = String(input.text || '');
   const injection = scanInjection(note) || files.some((f) => f.media_type.startsWith('text/') && scanInjection(Buffer.from(f.data, 'base64').toString('utf8')));
   const base = { by: 'heuristic', model: null, preInjection: injection };
-  if (!files.length && !note && !input.url) return shape({ verdict: 'unclear', confidence: 0.2, reason: 'No proof was submitted.' }, base);
+  if (!files.length && !note && !input.url) return shapeVerdict({ verdict: 'unclear', confidence: 0.2, reason: 'No proof was submitted.' }, base);
   const observations = [
     ...files.map((f, i) => ({ source: `file:${i + 1}`, observation: `${f.media_type} received (${Math.round((f.data.length * 3) / 4 / 1024)} KB), not inspected offline` })),
     ...(note ? [{ source: 'note', observation: note.slice(0, 160) }] : []),
     ...(input.url ? [{ source: 'url', observation: `URL supplied: ${String(input.url).slice(0, 160)}` }] : []),
   ];
-  if (injection) return shape({ verdict: 'unclear', confidence: 0.3, reason: 'The proof contains instructions aimed at the reviewer, so a person should check it before payment.', observations }, base);
-  if (NEGATIVE_RE.test(note)) return shape({ verdict: 'fail', confidence: 0.6, reason: 'The submitted note says the work is not complete yet.', observations }, base);
+  if (injection) return shapeVerdict({ verdict: 'unclear', confidence: 0.3, reason: 'The proof contains instructions aimed at the reviewer, so a person should check it before payment.', observations }, base);
+  if (NEGATIVE_RE.test(note)) return shapeVerdict({ verdict: 'fail', confidence: 0.6, reason: 'The submitted note says the work is not complete yet.', observations }, base);
   const terms = [...new Set(String(input.milestone?.criteria || '').toLowerCase().match(/[a-z]{4,}/g) || [])].filter((w) => !STOP.has(w));
   const hit = terms.filter((w) => note.toLowerCase().includes(w));
   const reason = files.length
     ? `Automatic image checking is offline${terms.length && note ? `; the note mentions ${hit.length} of ${terms.length} key terms` : ''}, so a person should review the files.`
     : 'Only a written note was submitted, so a person should confirm the work.';
-  return shape({ verdict: 'unclear', confidence: 0.4, reason, observations }, base);
+  return shapeVerdict({ verdict: 'unclear', confidence: 0.4, reason, observations }, base);
 }
