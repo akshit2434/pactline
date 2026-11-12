@@ -4,6 +4,8 @@ import http from 'node:http';
 import { createEngine } from '../src/engine.js';
 import { MockEscrow } from '../src/paypal/escrow.js';
 import { demoContract } from './fixtures.js';
+import { assertPublicUrl } from '../src/oracles/index.js';
+process.env.PACTLINE_ALLOW_PRIVATE_URLS = '1'; // tests serve their fake staging site on 127.0.0.1
 
 function localSite() {
   return new Promise((resolve) => {
@@ -122,4 +124,10 @@ test('events stream and seeded demo deals work', async () => {
   const api = engine.toApi(d); assert.equal(api.status, 'ACTIVE'); assert.equal(api.milestones[0].status, 'RELEASED'); assert.equal(api.milestones[1].status, 'NEEDS_REVIEW');
   assert.ok(seen.includes('funding.authorized') && seen.includes('milestone.released') && seen.includes('milestone.needs_review'));
   assert.ok(engine.ledger(d.id).length >= 5);
+});
+
+test('SSRF guard refuses private addresses unless explicitly allowed', async () => {
+  process.env.PACTLINE_ALLOW_PRIVATE_URLS = '0';
+  try { for (const u of ['http://127.0.0.1:9/x', 'http://169.254.169.254/latest/meta-data', 'http://10.0.0.5/', 'http://192.168.1.1/']) await assert.rejects(() => assertPublicUrl(u), (e) => e.private === true, u); }
+  finally { process.env.PACTLINE_ALLOW_PRIVATE_URLS = '1'; }
 });
