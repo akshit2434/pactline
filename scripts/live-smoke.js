@@ -17,6 +17,8 @@ const c1 = await pp.captureAuthorization(auth.authorizationId, { amountCents: 30
 step('capture 30%', c1);
 const c2 = await pp.captureAuthorization(auth.authorizationId, { amountCents: 5000, currency: 'USD', finalCapture: false, invoiceId: 'smoke-b-' + Date.now() });
 step('capture 50%', c2);
+const re = await pp.reauthorizeAuthorization(auth.authorizationId, { amountCents: 2000, currency: 'USD' }).catch((e) => ({ error: e.message.slice(0, 220) }));
+step('reauthorize remaining (inside honor period)', re);
 let over; try { await pp.captureAuthorization(auth.authorizationId, { amountCents: 9000, currency: 'USD', invoiceId: 'smoke-c-' + Date.now() }); over = 'NOT REJECTED'; } catch (e) { over = e.message.slice(0, 160); }
 step('over-capture rejected?', over);
 const v = await pp.voidAuthorization(auth.authorizationId).catch((e) => ({ error: e.message.slice(0, 200) }));

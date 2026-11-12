@@ -236,9 +236,10 @@ export function createEngine({ escrow, baseUrl, dataFile, now = () => Date.now()
       }
     }
     // honour window: a PayPal authorization is honoured for 3 days; reauthorize to keep the guarantee alive
-    if (d.state.status === 'ACTIVE' && day >= 4 && (d.funding.reauthorized || 0) === 0 && remaining(d.state) > 0) {
+    if (d.state.status === 'ACTIVE' && day >= 4 && (d.funding.reauthorized || 0) === 0 && !d.funding.reauth_tried && remaining(d.state) > 0) {
+      d.funding.reauth_tried = true;
       try { const r = await esc(d).reauthorize(d.funding.authorization_id, { amountCents: remaining(d.state), currency: 'USD' }); d.funding.reauthorized = 1; row(d, 'reauthorize', { meta: r.meta, paypal_id: d.funding.authorization_id, status: r.status, amount_cents: remaining(d.state), note: 'Hold re-authorized after the 3-day honor period so the money stays guaranteed' }); }
-      catch (err) { row(d, 'reauthorize', { status: 'SKIPPED', call: 'POST /v2/payments/authorizations/{id}/reauthorize', note: `Reauthorize not accepted yet: ${String(err.message).slice(0, 120)}` }); }
+      catch (err) { const soon = /TOO_SOON/.test(err.message); row(d, 'reauthorize', { status: soon ? 'SCHEDULED' : 'SKIPPED', call: 'POST /v2/payments/authorizations/{id}/reauthorize', note: soon ? 'PayPal only allows reauthorization after the real 3-day honor period (sandbox: REAUTHORIZATION_TOO_SOON). Production would reauthorize here; the demo clock is simulated.' : `Reauthorize not accepted: ${String(err.message).slice(0, 120)}` }); }
     }
     if (d.state.status === 'ACTIVE') {
       const t = await transition(d, { type: 'TICK', day });
