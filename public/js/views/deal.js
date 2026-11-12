@@ -5,7 +5,7 @@ import { ORACLE_LABEL, ORACLE_ICON } from '../parse.js';
 import { flowStrip, popover, openSheet, srSay } from '../components.js';
 
 const BY = { 'claude-vision': 'Claude vision', 'claude-cli': 'Claude', 'url-oracle': 'URL check', heuristic: 'Timer check', human: 'A person' };
-const STATE_LABEL = { PENDING: 'Waiting', CHECKING: 'Checking', NEEDS_REVIEW: 'Needs a look', RELEASED: 'Released', REJECTED: 'Rejected', VOIDED: 'Voided' };
+const STATE_LABEL = { PENDING: 'Waiting', CHECKING: 'Checking', NEEDS_REVIEW: 'Needs a look', AWAITING_CONFIRMATION: 'Client to confirm', RELEASED: 'Released', REJECTED: 'Rejected', VOIDED: 'Voided' };
 
 export function mount(root, { id }) {
   let deal = null, dead = false, ops = 0, dirty = false, shown = 0;
@@ -120,10 +120,10 @@ export function mount(root, { id }) {
 
   function item(m, i, active) {
     const st = statusOf(m);
-    const node = h('span', { class: 'node' }, st === 'RELEASED' ? ic('check', 20) : st === 'CHECKING' ? h('span', { class: 'spinner' }) : st === 'NEEDS_REVIEW' ? ic('pause', 18) : st === 'REJECTED' ? ic('x', 18) : st === 'VOIDED' ? ic('undo', 16) : String(i + 1));
+    const node = h('span', { class: 'node' }, st === 'RELEASED' ? ic('check', 20) : st === 'CHECKING' ? h('span', { class: 'spinner' }) : st === 'NEEDS_REVIEW' || st === 'AWAITING_CONFIRMATION' ? ic('pause', 18) : st === 'REJECTED' ? ic('x', 18) : st === 'VOIDED' ? ic('undo', 16) : String(i + 1));
     const metaBits = [h('span', { class: 'state-chip ' + st }, STATE_LABEL[st] || st), h('span', { style: { display: 'inline-flex', gap: '6px', alignItems: 'center' } }, ic(ORACLE_ICON[m.oracle.type] || 'check', 14), ORACLE_LABEL[m.oracle.type])];
     if (st === 'RELEASED' && m.released_at) metaBits.push(h('span', null, fmtTime(m.released_at)));
-    if (m.verdict && ['RELEASED', 'NEEDS_REVIEW', 'REJECTED'].includes(st)) metaBits.unshift(verdictChip(m.verdict));
+    if (m.verdict && ['RELEASED', 'NEEDS_REVIEW', 'REJECTED', 'AWAITING_CONFIRMATION'].includes(st)) metaBits.unshift(verdictChip(m.verdict));
     const body = h('div', { class: 'ms-body' }, h('div', { class: 'ms-top' }, h('span', { class: 't' }, m.title), h('span', { class: 'a' }, money(m.amount_cents, { compact: true }))), h('div', { class: 'ms-meta' }, metaBits));
     const panel = panelFor(m, st, active);
     if (panel) body.append(panel);
@@ -144,9 +144,25 @@ export function mount(root, { id }) {
     if (st === 'CHECKING') {
       return h('div', { class: 'proof' }, h('div', { class: 'checking', 'aria-busy': 'true' }, h('div', { class: 'lbl' }, h('span', { class: 'spinner' }), m.oracle.type === 'evidence' ? 'Claude is reading the proof…' : 'Checking…'), h('div', { class: 'skel' }), h('div', { class: 'skel' }), h('div', { class: 'skel' })));
     }
+    if (st === 'AWAITING_CONFIRMATION') {
+      const cf = m.confirmation; const left = Math.max(0, cf.until_day - deal.clock.day);
+      const box = h('div', { class: 'review-box confirm-box', id: 'confirm-box-' + m.id },
+        h('p', null, h('strong', null, 'Proof passed. '), `${money(m.amount_cents, { compact: true })} releases in ${left} day${left === 1 ? '' : 's'} unless ${c.client.name} disputes it.`),
+        h('p', { class: 'countdown', role: 'timer', 'aria-live': 'off' }, ic('hour', 16), `Day ${deal.clock.day} of ${cf.until_day}: auto-release on day ${cf.until_day}`));
+      if (role === 'client') {
+        box.append(h('div', { class: 'row' },
+          h('button', { class: 'btn primary sm', type: 'button', id: 'confirm-' + m.id, onclick: () => confirmNow(m) }, 'Confirm now'),
+          h('button', { class: 'btn ghost sm', type: 'button', id: 'dispute-' + m.id, onclick: () => askDispute(m) }, 'Dispute')));
+      } else box.append(h('div', { class: 'waiting' }, ic('clock', 16), `Waiting for ${c.client.name} to confirm, or for the window to end`));
+      box.append(h('div', { class: 'row' }, h('span', { class: 'waiting' }, 'Demo clock'), h('button', { class: 'btn ghost sm', type: 'button', id: 'skip-days', onclick: () => skipDays(left) }, `Skip ${left} day${left === 1 ? '' : 's'}`)));
+      return box;
+    }
     if (st === 'NEEDS_REVIEW') {
       const r = m.review || {};
       const box = h('div', { class: 'review-box' }, h('p', null, r.summary || 'The check was not sure.'));
+      if (m.dispute) box.prepend(h('p', { class: 'dispute-tag', role: 'status' }, ic('pause', 16), h('strong', null, 'Disputed: release paused. '), `Unmet: "${m.dispute.criterion}"`));
+      const note = role === 'client' ? r.for_client : r.for_freelancer;
+      if (note) box.append(h('p', { class: 'for-role' }, note));
       if (role === 'client') {
         box.append(h('div', { class: 'row' },
           h('button', { class: 'btn primary sm', type: 'button', id: 'release-' + m.id, onclick: () => decide(m, 'release') }, 'Release ', money(m.amount_cents, { compact: true })),
@@ -207,6 +223,30 @@ export function mount(root, { id }) {
     await guarded(async () => {
       try { const prev = deal; const d = await api.review(deal.id, m.id, decision); delete local[m.id]; await apply(d, prev); } catch (e) { delete local[m.id]; paintRail(); toast(e.message); }
     });
+  }
+  async function confirmNow(m) {
+    local[m.id] = 'CHECKING'; paintRail();
+    await guarded(async () => { try { const prev = deal; const d = await api.confirm(deal.id, m.id); delete local[m.id]; await apply(d, prev); } catch (e) { delete local[m.id]; paintRail(); toast(e.message); } });
+  }
+  function askDispute(m) {
+    const crits = String(m.criteria || m.title).split(/(?<=[.;])\s+|\s+and\s+/).map((x) => x.trim().replace(/[.;]$/, '')).filter(Boolean);
+    let close;
+    const sel = h('select', { id: 'dispute-criterion', required: true }, h('option', { value: '' }, 'Choose the unmet criterion'), crits.map((x) => h('option', { value: x }, x)));
+    const why = h('textarea', { id: 'dispute-reason', rows: 3, required: true, minlength: 10, maxlength: 600, placeholder: 'What is missing, in one or two sentences' });
+    const err = h('p', { class: 'field-error', role: 'alert' });
+    const go = h('button', { class: 'btn danger', type: 'button', id: 'confirm-dispute' }, 'Pause release and dispute');
+    const no = h('button', { class: 'btn ghost', type: 'button' }, 'Back');
+    no.addEventListener('click', () => close());
+    go.addEventListener('click', async () => {
+      if (!sel.value) { err.textContent = 'Choose the criterion that is not met.'; return sel.focus(); }
+      if (why.value.trim().length < 10) { err.textContent = 'Give a reason of at least 10 characters.'; return why.focus(); }
+      go.classList.add('busy');
+      await guarded(async () => { try { const prev = deal; const d = await api.dispute(deal.id, m.id, why.value.trim(), sel.value); close(); await apply(d, prev); toast('Disputed. The money stays held.'); } catch (e) { go.classList.remove('busy'); err.textContent = e.message; } });
+    });
+    close = openSheet(h('div', { style: { display: 'grid', gap: '12px' } }, h('h2', null, 'Dispute this milestone'),
+      h('p', null, `${money(m.amount_cents, { compact: true })} stays held until this is resolved. Both sides see your reason.`),
+      h('label', { for: 'dispute-criterion' }, 'Which criterion is not met?'), sel,
+      h('label', { for: 'dispute-reason' }, 'Reason'), why, err, h('div', { class: 'acts' }, go, no)));
   }
   async function skipDays(n) {
     const btn = document.getElementById('skip-days'); if (btn) btn.classList.add('busy');

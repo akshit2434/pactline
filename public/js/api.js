@@ -42,6 +42,8 @@ function createReal() {
     listDeals: async () => (await http('GET', '/api/deals')).deals,
     submit: (id, mid, payload) => http('POST', `/api/deals/${id}/milestones/${mid}/submit`, payload),
     review: (id, mid, decision, note) => http('POST', `/api/deals/${id}/milestones/${mid}/review`, { decision, note }),
+    confirm: (id, mid) => http('POST', `/api/deals/${id}/milestones/${mid}/confirm`, {}),
+    dispute: (id, mid, reason, criterion) => http('POST', `/api/deals/${id}/milestones/${mid}/dispute`, { reason, criterion }),
     cancel: (id, reason) => http('POST', `/api/deals/${id}/cancel`, { reason }),
     clock: (id, days) => http('POST', `/api/deals/${id}/clock`, { advance_days: days }),
     seed: (stage) => http('POST', '/api/demo/seed', { stage }),

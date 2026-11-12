@@ -1,6 +1,29 @@
 import { h, ic, money, RM, initials, countTo, sleep } from './util.js';
 
 // ---- popover helper (tap to open, outside click / Esc closes) ----
+// Keep a popover inside the viewport and its nearest clipping container: cap the width, then shift
+// horizontally (flip right-aligned first, then clamp) and flip above/below if it would be cut off.
+export function place(pop, anchor) {
+  const M = 8;
+  let lo = M, hi = window.innerWidth - M, top = M, bottom = window.innerHeight - M;
+  for (let el = anchor.parentElement; el && el !== document.body; el = el.parentElement) {
+    const cs = getComputedStyle(el);
+    if (/(hidden|clip|auto|scroll)/.test(cs.overflowX + cs.overflow)) { const r = el.getBoundingClientRect(); lo = Math.max(lo, r.left + M); hi = Math.min(hi, r.right - M); break; }
+  }
+  if (hi - lo < 200) { lo = M; hi = window.innerWidth - M; } // container too narrow: use the viewport
+  pop.style.maxWidth = `${Math.max(160, hi - lo)}px`;
+  pop.style.left = '0px'; pop.style.right = 'auto';
+  const a = anchor.getBoundingClientRect(); let r = pop.getBoundingClientRect();
+  let x = 0;
+  if (r.right > hi) x = (a.right - r.width) - a.left; // right-align to the trigger
+  if (a.left + x < lo) x = lo - a.left;
+  if (a.left + x + r.width > hi) x = hi - r.width - a.left;
+  pop.style.left = `${Math.round(x)}px`;
+  r = pop.getBoundingClientRect();
+  if (r.bottom > bottom && a.top - r.height - 10 > top) { pop.style.top = 'auto'; pop.style.bottom = 'calc(100% + 10px)'; }
+  else if (r.top < top) { pop.style.bottom = 'auto'; pop.style.top = 'calc(100% + 10px)'; }
+}
+
 export function popover(trigger, content, cls = '') {
   const wrap = h('span', { class: 'popwrap', style: { position: 'relative', display: 'inline-flex' } }, trigger);
   let pop = null;
@@ -12,7 +35,7 @@ export function popover(trigger, content, cls = '') {
     if (pop) return close();
     pop = h('div', { class: 'pop ' + cls, role: 'dialog' }, typeof content === 'function' ? content() : content);
     wrap.append(pop); trigger.setAttribute('aria-expanded', 'true');
-    const r = pop.getBoundingClientRect(); if (r.right > window.innerWidth - 8) pop.classList.add('right');
+    place(pop, wrap);
     document.addEventListener('click', away, true); document.addEventListener('keydown', esc);
   });
   return wrap;

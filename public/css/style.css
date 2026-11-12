@@ -134,7 +134,7 @@ kbd { font: 600 11px var(--mono); border: 1px solid var(--line-2); border-bottom
 .verified { position: relative; display: inline-flex; flex: none; white-space: nowrap; }
 .verified button { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px 7px 10px; border-radius: 999px; background: var(--green-50); color: var(--green); border: 1px solid color-mix(in srgb, var(--green) 25%, transparent); font-weight: 700; font-size: 13px; }
 .verified.anim button .ic { animation: pop .5s var(--spring) both; }
-.pop { position: absolute; z-index: 15; top: calc(100% + 10px); left: 0; width: 320px; max-width: 86vw; padding: 16px; display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow-lg); animation: rise .24s var(--ease) both; font-size: 14px; color: var(--ink-2); }
+.pop { position: absolute; z-index: 15; top: calc(100% + 10px); left: 0; width: min(320px, calc(100vw - 16px)); max-width: calc(100vw - 16px); box-sizing: border-box; overflow-wrap: anywhere; word-break: break-word; padding: 16px; display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow-lg); animation: rise .24s var(--ease) both; font-size: 14px; color: var(--ink-2); }
 .pop.right { left: auto; right: 0; }
 .pop li { list-style: none; display: flex; gap: 8px; align-items: flex-start; }
 .pop ul { margin: 0; padding: 0; display: grid; gap: 8px; }
@@ -261,7 +261,7 @@ kbd { font: 600 11px var(--mono); border: 1px solid var(--line-2); border-bottom
 .s-VOIDED .a { text-decoration: line-through; color: var(--ink-3); }
 .state-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 12.5px; font-weight: 700; background: var(--slate-50); color: var(--slate); }
 .state-chip.RELEASED { background: var(--green-50); color: var(--green); }
-.state-chip.CHECKING, .state-chip.NEEDS_REVIEW { background: var(--amber-50); color: var(--amber); }
+.state-chip.CHECKING, .state-chip.NEEDS_REVIEW, .state-chip.AWAITING_CONFIRMATION { background: var(--amber-50); color: var(--amber); }
 .state-chip.REJECTED { background: var(--red-50); color: var(--red); }
 .state-chip.ACTIVE { background: var(--blue-50); color: var(--blue-600); }
 
@@ -543,3 +543,11 @@ body.demo-on .site-foot { display: none; }
 .terms q { font-weight: 600; color: var(--ink); overflow-wrap: anywhere; }
 .terms-sug { display: block; margin-top: 2px; color: var(--ink-3); }
 @media (max-width: 520px) { .terms li { grid-template-columns: 1fr; } }
+
+/* client confirmation window + disputes */
+.confirm-box { background: var(--green-50, #eef7f0); }
+.confirm-box .countdown { display: flex; gap: 8px; align-items: center; font-variant-numeric: tabular-nums; color: var(--ink-3); font-size: 13px; }
+.dispute-tag { display: flex; gap: 6px; align-items: flex-start; flex-wrap: wrap; color: var(--red, #b42318); }
+.review-box .for-role { font-size: 13px; color: var(--ink-3); }
+.field-error { color: var(--red, #b42318); font-size: 13px; min-height: 1em; }
+#dispute-criterion, #dispute-reason { width: 100%; box-sizing: border-box; font: inherit; padding: 10px; border: 1px solid var(--line); border-radius: var(--r-sm, 8px); background: var(--surface); color: var(--ink); }
