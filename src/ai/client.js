@@ -13,6 +13,10 @@ export class AiInputError extends Error {
   constructor(message) { super(message); this.name = 'AiInputError'; this.code = 'AI_BAD_INPUT'; }
 }
 
+// Optional gate run before every Claude call (public demo budgets). It throws AiUnavailable to force the offline fallback.
+let callGate = null;
+export function setCallGate(fn) { callGate = typeof fn === 'function' ? fn : null; }
+
 let client = null;
 export function hasKey() {
   return Boolean(process.env.ANTHROPIC_API_KEY) && process.env.PACTLINE_AI_OFFLINE !== '1';
@@ -29,6 +33,7 @@ function getClient() {
  */
 export async function callJSON({ model = DEFAULT_MODEL, system, content, schema, effort = 'medium', maxTokens = 8000, timeoutMs = 60_000 }) {
   const c = getClient();
+  if (callGate) callGate({ model });
   let res;
   try {
     res = await c.beta.messages.create({

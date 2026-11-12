@@ -1,0 +1,16 @@
+/* Public judge demo additions (served only when PACTLINE_PUBLIC=1). */
+.pl-public-banner { position: relative; z-index: 30; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 14px; padding: 8px 16px; background: #0B1B3A; color: #fff; font: 600 13.5px/1.4 var(--font, system-ui); text-align: center; }
+.pl-public-banner strong { color: #C8F031; }
+.pl-public-banner span { font-weight: 500; color: #D6DEEB; }
+.pl-public-banner .pl-try { color: #fff; text-decoration: underline; text-underline-offset: 3px; font-weight: 650; }
+.pl-public-banner .pl-try:focus-visible { outline: 2px solid #C8F031; outline-offset: 2px; border-radius: 4px; }
+.pl-buyer { margin: 18px auto 0; max-width: 420px; text-align: left; border: 1px solid var(--line-2, #CBD5E1); border-radius: 14px; padding: 14px 16px; background: var(--surface-2, #F8FAFC); color: var(--ink, #0B1B3A); font-size: 14px; }
+.pl-buyer h2 { margin: 0 0 4px; font-size: 14.5px; }
+.pl-buyer p { margin: 0 0 10px; color: var(--ink-3, #5B6B82); }
+.pl-buyer dl { display: grid; grid-template-columns: auto 1fr auto; gap: 6px 10px; align-items: center; margin: 0; }
+.pl-buyer dt { color: var(--ink-3, #5B6B82); font-weight: 600; }
+.pl-buyer dd { margin: 0; font: 600 13.5px var(--mono, ui-monospace, monospace); overflow-wrap: anywhere; }
+.pl-buyer button { font: 600 12px var(--font, system-ui); border: 1px solid var(--line-2, #CBD5E1); background: var(--surface, #fff); color: var(--ink, #0B1B3A); border-radius: 999px; padding: 3px 10px; cursor: pointer; }
+.pl-buyer .pl-alt { margin: 10px 0 0; font-size: 13px; }
+.pl-buyer .pl-alt a { color: var(--blue, #0070E0); }
+.pl-notice { position: fixed; z-index: 95; left: 50%; bottom: 20px; transform: translateX(-50%); max-width: min(560px, calc(100vw - 32px)); padding: 10px 16px; border-radius: 12px; background: #0B1B3A; color: #fff; font: 600 13.5px/1.4 var(--font, system-ui); box-shadow: 0 10px 30px rgba(0,0,0,.25); }

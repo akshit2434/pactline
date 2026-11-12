@@ -9,6 +9,7 @@ import { aiStatus, explainEvent } from './ai/index.js';
 import { verifyContract } from './core/verify.js';
 import { compileText } from './compile.js';
 import { DEMO_TEXT, demoContract } from './demo.js';
+import { applyPublicMode } from './public/mode.js';
 
 const pp = await createPayPal().catch((e) => { console.error('[paypal] live setup failed, using mock:', e.message.slice(0, 200)); return null; });
 const live = pp && pp.mode === 'live';
@@ -18,12 +19,15 @@ const engine = createEngine({ escrow, baseUrl: config.publicBaseUrl, dataFile: p
 
 const app = express();
 app.disable('x-powered-by');
-app.use(express.json({ limit: '12mb' })); // evidence screenshots arrive as data URLs
+// Public judge demo: limits, caps, headers, per-visitor deals, banner (src/public/mode.js). Must run before the routes.
+const pub = config.public ? applyPublicMode(app, { engine, config, live }) : null;
+if (!pub) app.use(express.json({ limit: '12mb' })); // evidence screenshots arrive as data URLs
 app.use(express.static(path.join(config.root, 'public')));
 
 const wrap = (fn) => (req, res) => Promise.resolve(fn(req, res)).catch((e) => {
   const status = e.status || (e.code === 'AI_BAD_INPUT' ? 400 : 500);
   if (status >= 500) console.error('[error]', e.stack?.split('\n').slice(0, 3).join(' | '));
+  if (pub && status >= 500) return res.status(status).json({ error: 'Something went wrong. Please try again.', code: e.code && /^[A-Z_]+$/.test(e.code) ? e.code : 'INTERNAL' });
   res.status(status).json({ error: e.message, code: e.code || 'INTERNAL', ...(e.verification ? { verification: e.verification } : {}) });
 });
 
@@ -49,7 +53,7 @@ app.post('/api/deals/:id/fund', wrap(async (req, res) => { res.json(await engine
 app.post('/api/deals/:id/fund/complete', wrap(async (req, res) => { res.json(engine.toApi(await engine.completeFunding(req.params.id, req.body?.order_id))); }));
 app.get('/api/deals/:id/fund/return', wrap(async (req, res) => {
   try { await engine.completeFunding(req.params.id, String(req.query.token || '')); res.redirect(`/?deal=${req.params.id}&funded=1`); }
-  catch (e) { console.error('[fund/return]', e.message.slice(0, 200)); res.redirect(`/?deal=${req.params.id}&funded=0&error=${encodeURIComponent(e.message.slice(0, 120))}`); }
+  catch (e) { console.error('[fund/return]', e.message.slice(0, 200)); res.redirect(`/?deal=${req.params.id}&funded=0&error=${encodeURIComponent(pub ? 'PayPal did not confirm the hold' : e.message.slice(0, 120))}`); }
 }));
 app.post('/api/deals/:id/milestones/:mid/submit', wrap(async (req, res) => {
   const b = req.body || {}; res.json(await engine.submit(req.params.id, req.params.mid, { text: b.text, url: b.url, image_data_url: b.image_data_url }));
@@ -99,4 +103,5 @@ app.post('/api/demo/seed', wrap(async (req, res) => { res.json(engine.toApi(awai
 app.post('/api/demo/reset', wrap(async (_req, res) => { engine.reset(); res.json({ ok: true }); }));
 
 app.use('/api', (_req, res) => res.status(404).json({ error: 'No such endpoint', code: 'NOT_FOUND' }));
+if (pub) pub.finish(app);
 app.listen(config.port, config.host, () => console.log(`Pactline on http://${config.host}:${config.port}  paypal=${live ? 'live' : 'mock'}  ai=${JSON.stringify(aiStatus())}`));

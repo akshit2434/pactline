@@ -3,12 +3,15 @@ import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn } from 'node:child_process';
 import { once } from 'node:events';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 const PORT = 3199; const B = `http://127.0.0.1:${PORT}`; let child;
 const j = async (m, p, b) => { const r = await fetch(B + p, { method: m, headers: { 'content-type': 'application/json' }, body: b ? JSON.stringify(b) : undefined }); return { status: r.status, body: await r.json().catch(() => ({})) }; };
 
 before(async () => {
-  child = spawn(process.execPath, ['src/server.js'], { env: { PATH: process.env.PATH, HOME: process.env.HOME, PORT: String(PORT), PAYPAL_MODE: 'mock', PACTLINE_AI_OFFLINE: '1', KEYS_FILE: '' }, stdio: ['ignore', 'pipe', 'inherit'] });
+  child = spawn(process.execPath, ['src/server.js'], { env: { PATH: process.env.PATH, HOME: process.env.HOME, PORT: String(PORT), PAYPAL_MODE: 'mock', PACTLINE_AI_OFFLINE: '1', KEYS_FILE: '', PACTLINE_DATA_DIR: fs.mkdtempSync(path.join(os.tmpdir(), 'pl-api-')) }, stdio: ['ignore', 'pipe', 'inherit'] });
   child.stdout.setEncoding('utf8');
   await new Promise((resolve, reject) => { const t = setTimeout(() => reject(new Error('server did not start')), 15000); child.stdout.on('data', (d) => { if (String(d).includes('Pactline on')) { clearTimeout(t); resolve(); } }); });
 });
