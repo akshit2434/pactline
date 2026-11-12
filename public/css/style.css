@@ -119,6 +119,7 @@ kbd { font: 600 11px var(--mono); border: 1px solid var(--line-2); border-bottom
 .pv-row { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 12px 14px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface-2); animation: rise .4s var(--ease) both; }
 .pv-row .pct { font-weight: 750; font-size: 15px; color: var(--blue-600); font-variant-numeric: tabular-nums; background: var(--blue-50); border-radius: 12px; height: 40px; display: grid; place-items: center; }
 .pv-row .t { font-weight: 600; min-width: 0; }
+.pv-row.still-row { animation: none; }
 .pv-row .t .caret::after { content: ""; display: inline-block; width: 2px; height: 1.05em; background: var(--blue); margin-left: 2px; vertical-align: -3px; animation: blink 1s steps(1) infinite; }
 .pv-row .a { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink-2); }
 @keyframes blink { 50% { opacity: 0; } }
@@ -132,7 +133,7 @@ kbd { font: 600 11px var(--mono); border: 1px solid var(--line-2); border-bottom
 /* verified badge */
 .verified { position: relative; display: inline-flex; flex: none; white-space: nowrap; }
 .verified button { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px 7px 10px; border-radius: 999px; background: var(--green-50); color: var(--green); border: 1px solid color-mix(in srgb, var(--green) 25%, transparent); font-weight: 700; font-size: 13px; }
-.verified button .ic { animation: pop .5s var(--spring) both; }
+.verified.anim button .ic { animation: pop .5s var(--spring) both; }
 .pop { position: absolute; z-index: 15; top: calc(100% + 10px); left: 0; width: 320px; max-width: 86vw; padding: 16px; display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: var(--shadow-lg); animation: rise .24s var(--ease) both; font-size: 14px; color: var(--ink-2); }
 .pop.right { left: auto; right: 0; }
 .pop li { list-style: none; display: flex; gap: 8px; align-items: flex-start; }
@@ -245,7 +246,8 @@ kbd { font: 600 11px var(--mono); border: 1px solid var(--line-2); border-bottom
 .node { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); border: 2px solid var(--line-2); color: var(--ink-3); position: relative; z-index: 1; font-weight: 750; font-size: 14px; transition: all .4s var(--ease); }
 .s-CHECKING .node { border-color: var(--amber-500); color: var(--amber); background: var(--amber-50); }
 .s-NEEDS_REVIEW .node { border-color: var(--amber-500); color: var(--amber); background: var(--amber-50); }
-.s-RELEASED .node { border-color: var(--green-500); background: var(--green-500); color: #fff; animation: pop .55s var(--spring) both; }
+.s-RELEASED .node { border-color: var(--green-500); background: var(--green-500); color: #fff; }
+.rail li.anim.s-RELEASED .node { animation: pop .55s var(--spring) both; }
 .s-REJECTED .node { border-color: var(--red); color: var(--red); background: var(--red-50); }
 .s-VOIDED .node { border-style: dashed; color: var(--slate); background: var(--slate-50); }
 .s-PENDING.active .node { border-color: var(--blue); color: var(--blue); background: var(--blue-50); box-shadow: 0 0 0 5px color-mix(in srgb, var(--blue) 14%, transparent); }
@@ -263,7 +265,8 @@ kbd { font: 600 11px var(--mono); border: 1px solid var(--line-2); border-bottom
 .state-chip.REJECTED { background: var(--red-50); color: var(--red); }
 .state-chip.ACTIVE { background: var(--blue-50); color: var(--blue-600); }
 
-.proof { padding: 16px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); box-shadow: var(--shadow); display: grid; gap: 12px; animation: rise .4s var(--ease) both; }
+.proof { padding: 16px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--surface); box-shadow: var(--shadow); display: grid; gap: 12px; }
+.rail li.anim .proof { animation: rise .4s var(--ease) both; }
 .proof .crit { color: var(--ink-2); font-size: 15px; }
 .dropzone { border: 2px dashed var(--line-2); border-radius: var(--r-md); padding: 22px 16px; display: grid; gap: 6px; justify-items: center; text-align: center; color: var(--ink-2); font-weight: 600; background: var(--surface-2); transition: all .24s var(--ease); cursor: pointer; position: relative; }
 .dropzone small { color: var(--ink-3); font-weight: 500; }
@@ -280,7 +283,8 @@ kbd { font: 600 11px var(--mono); border: 1px solid var(--line-2); border-bottom
 .checking .skel:nth-child(3) { width: 48%; }
 .checking .lbl { display: flex; gap: 8px; align-items: center; color: var(--amber); font-weight: 650; font-size: 14px; }
 .verdict { position: relative; display: inline-flex; }
-.verdict button { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 10px; border-radius: 999px; font-weight: 700; font-size: 13px; border: 1px solid transparent; animation: pop .45s var(--spring) both; }
+.verdict button { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 10px; border-radius: 999px; font-weight: 700; font-size: 13px; border: 1px solid transparent; }
+.rail li.anim .verdict button { animation: pop .45s var(--spring) both; }
 .verdict.pass button { background: var(--green-50); color: var(--green); border-color: color-mix(in srgb, var(--green) 25%, transparent); }
 .verdict.unclear button { background: var(--amber-50); color: var(--amber); border-color: color-mix(in srgb, var(--amber) 28%, transparent); }
 .verdict.fail button { background: var(--red-50); color: var(--red); }

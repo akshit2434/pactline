@@ -5,7 +5,7 @@ export const DEMO_TEXT =
 export const EXAMPLES = [
   { label: 'Landing page, $1,200', text: DEMO_TEXT },
   { label: 'Logo kit, $800', text: 'Logo and brand kit, $800: 50% when the first concepts are shared, 50% when the final files are approved; void the rest if not delivered by 21 Nov.' },
-  { label: 'App MVP, $4,500', text: 'Mobile app MVP, $4,500: 25% when the pull request for auth is merged, 45% when the beta build matches the designs, 30% after 14 days with no open bugs.' },
+  { label: 'App MVP, $4,500', text: 'Mobile app MVP, $4,500: 20% when the wireframes are approved, 25% when the pull request northwind/app#42 is merged, 35% when the beta build matches the designs, 20% after 14 days with no open bugs.' },
 ];
 
 const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);

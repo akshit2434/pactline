@@ -101,9 +101,21 @@ export function mount(root, { id }) {
   }
 
   // ---------- rail ----------
+  // Repaint only when something the rail shows has changed, and animate a node only on a real status change.
+  // (Every SSE event used to rebuild the rail, which replayed the green "released" pop every couple of seconds.)
+  const seen = {}; let railSig = null;
   function paintRail() {
     const act = activeMs();
-    rail.replaceChildren(...deal.milestones.map((m, i) => item(m, i, act && act.id === m.id)));
+    const sig = JSON.stringify([state.role, deal.status, deal.clock && deal.clock.day, act && act.id, deal.milestones.map((m) => [statusOf(m), m.verdict, m.review, m.receipt && m.receipt.number, m.released_at, staged[m.id] && staged[m.id].name])]);
+    if (sig === railSig) return;
+    railSig = sig;
+    rail.replaceChildren(...deal.milestones.map((m, i) => {
+      const st = statusOf(m), changed = seen[m.id] !== undefined && seen[m.id] !== st;
+      seen[m.id] = st;
+      const li = item(m, i, act && act.id === m.id);
+      if (changed) li.classList.add('anim');
+      return li;
+    }));
   }
 
   function item(m, i, active) {

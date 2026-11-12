@@ -1,8 +1,8 @@
 // One API object for the whole UI. Real backend when reachable (see ../../API.md), in-browser mock otherwise.
 import { createMock } from './mock.js';
 
-async function http(method, path, body) {
-  const res = await fetch(path, { method, headers: body ? { 'content-type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined });
+async function http(method, path, body, signal) {
+  const res = await fetch(path, { method, signal, headers: body ? { 'content-type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined });
   let data = null;
   try { data = await res.json(); } catch { /* empty */ }
   if (!res.ok) {
@@ -33,7 +33,7 @@ function createReal() {
   return {
     mock: false,
     status: () => http('GET', '/api/status'),
-    compile: (text, opts = {}) => http('POST', opts.typo ? '/api/contracts/typo' : '/api/contracts/compile', { text }),
+    compile: (text, opts = {}) => http('POST', opts.typo ? '/api/contracts/typo' : '/api/contracts/compile', { text }, opts.signal),
     verify: (contract) => http('POST', '/api/contracts/verify', { contract }),
     createDeal: (contract) => http('POST', '/api/deals', { contract }),
     fund: (id) => http('POST', `/api/deals/${id}/fund`),

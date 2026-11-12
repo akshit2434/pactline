@@ -255,6 +255,10 @@ export function createEngine({ escrow, baseUrl, dataFile, now = () => Date.now()
     const type = evt.event_type || 'UNKNOWN'; const res = evt.resource || {};
     const d = [...deals.values()].find((x) => x.funding.authorization_id && (res.id === x.funding.authorization_id || res.supplementary_data?.related_ids?.authorization_id === x.funding.authorization_id || res.custom_id === x.id || [...Object.values(x.ms)].some((m) => m.capture_id && m.capture_id === res.id)));
     if (!d) { return { matched: false }; }
+    // PayPal retries deliveries: the same event id is recorded once and never bumps the deal again.
+    d.webhooks_seen = d.webhooks_seen || [];
+    if (evt.id && d.webhooks_seen.includes(evt.id)) return { matched: true, deal_id: d.id, duplicate: true };
+    if (evt.id) { d.webhooks_seen.push(evt.id); if (d.webhooks_seen.length > 200) d.webhooks_seen.shift(); }
     row(d, 'webhook', { call: `webhook ${type}`, paypal_id: res.id, status: verified ? 'VERIFIED' : 'SIMULATED', amount_cents: res.amount?.value ? Math.round(Number(res.amount.value) * 100) : null, note: `${type} received${verified ? '' : ' (simulated)'}: state reconciled, no money moved by the webhook`, meta: { mock: !verified } });
     emit('webhook.received', d, { summary: `${type} received`, data: { type, verified } });
     touch(d); return { matched: true, deal_id: d.id };

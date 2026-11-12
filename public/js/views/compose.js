@@ -4,8 +4,10 @@ import { state, nav } from '../state.js';
 import { parseDeal, EXAMPLES } from '../parse.js';
 import { verifiedBadge } from '../components.js';
 
+export const COMPILE_IDLE_MS = 550;
+
 export function mount(root) {
-  let seq = 0, inflight = null, typers = [];
+  let seq = 0, inflight = null, typers = [], ctl = null;
   const ta = h('textarea', { class: 'deal-input', id: 'deal-text', rows: 4, 'aria-label': 'Describe the deal', placeholder: 'Landing page, $1,200: 30% when the staging URL is live, 50% when the design matches the mockup…', spellcheck: 'false' });
   const go = h('button', { class: 'btn primary lg', type: 'button', id: 'to-review', disabled: true }, 'Review contract ', ic('arrow', 18, 'arrow'));
   const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Examples' }, EXAMPLES.map((e) => h('button', { class: 'chip', type: 'button', onclick: () => fill(e.text) }, e.label)));
@@ -32,8 +34,10 @@ export function mount(root) {
     typers.forEach((t) => t.cancel()); typers = [];
     const d = state.draft, c = d.contract && d.compiledText === d.text ? d.contract : null;
     const p = d.parsed;
-    preview.replaceChildren();
     if (!p || !p.milestones.length) {
+      if (preview._key === 'empty') return;
+      preview._key = 'empty'; preview._els = null; preview._verified = false;
+      preview.replaceChildren();
       preview.append(
         h('div', { class: 'pv-head' }, h('span', { class: 'kicker' }, 'Contract preview')),
         h('div', { class: 'pv-title pv-empty' }, ''),
@@ -44,20 +48,35 @@ export function mount(root) {
     }
     const total = c ? c.hold.amount_cents : p.total_cents;
     const rows = c ? c.milestones.map((m) => ({ pct: m.share_pct, title: m.title, amount: m.amount_cents })) : p.milestones.map((m) => ({ pct: m.share_pct, title: m.title, amount: Math.round((p.total_cents * m.share_pct) / 100) }));
+    const verified = !!(c && d.verification && d.verification.ok);
+    const key = [rows.length, mode, verified, !!(c && d.attempts && d.attempts.length)].join('|');
+    // Typing: same structure as last time -> update the text in place (no rebuild, no re-animation, no layout jump).
+    if (!extra.animate && preview._key === key && preview._els) {
+      const E = preview._els;
+      E.title.textContent = c ? c.title : p.title;
+      E.amount.firstChild.textContent = money(total).replace(/\.00$/, '');
+      rows.forEach((r, i) => { const R = E.rows[i]; R.pct.textContent = r.pct + '%'; R.t.textContent = r.title; R.a.textContent = money(r.amount, { compact: true }); });
+      return;
+    }
+    const wasVerified = preview._verified; preview._key = key; preview._verified = verified;
+    preview.replaceChildren();
     const status = mode === 'compiling'
       ? h('span', { class: 'pill' }, h('span', { class: 'spinner', style: { width: '12px', height: '12px', borderWidth: '2px' } }), 'Checking every path…')
-      : c && d.verification && d.verification.ok ? verifiedBadge(d.verification)
+      : verified ? (() => { const b = verifiedBadge(d.verification); if (!wasVerified) b.classList.add('anim'); return b; })()
         : mode === 'error' ? h('span', { class: 'pill' }, 'Not readable yet') : h('span', { class: 'pill' }, 'Drafting');
     const list = h('div', { class: 'pv-list' });
-    const amountEl = h('div', { class: 'pv-amount' }, money(total).replace(/\.00$/, ''), h('small', null, '.00'));
+    const amountEl = h('div', { class: 'pv-amount' }, document.createTextNode(money(total).replace(/\.00$/, '')), h('small', null, '.00'));
+    const titleEl = h('div', { class: 'pv-title' }, c ? c.title : p.title);
     preview.append(
       h('div', { class: 'pv-head' }, h('span', { class: 'kicker' }, 'Contract preview'), status),
-      h('div', { class: 'pv-title' }, c ? c.title : p.title),
-      amountEl, list);
+      titleEl, amountEl, list);
+    const prevRows = preview._els ? preview._els.rows.length : 0;
+    preview._els = { title: titleEl, amount: amountEl, rows: [] };
     rows.forEach((r, i) => {
-      const t = h('span');
-      const row = h('div', { class: 'pv-row', style: { animationDelay: extra.animate ? i * 220 + 'ms' : '0ms' } },
-        h('span', { class: 'pct' }, r.pct + '%'), h('span', { class: 't' }, t), h('span', { class: 'a' }, money(r.amount, { compact: true })));
+      const t = h('span'), pct = h('span', { class: 'pct' }, r.pct + '%'), a = h('span', { class: 'a' }, money(r.amount, { compact: true }));
+      // only rows that are new (or the first reveal from an example chip) rise in; existing rows stay still
+      const row = h('div', { class: 'pv-row' + (extra.animate || i >= prevRows ? '' : ' still-row'), style: { animationDelay: extra.animate ? i * 220 + 'ms' : '0ms' } }, pct, t, a);
+      preview._els.rows.push({ pct, t, a });
       list.append(row);
       if (extra.animate && !RM()) {
         t.textContent = '';
@@ -81,17 +100,20 @@ export function mount(root) {
     if (!parsed || !parsed.milestones.length) return null;
     if (inflight && inflight.text === text) return inflight.p;
     const mine = ++seq;
+    if (ctl) ctl.abort();
+    ctl = new AbortController();
+    const signal = ctl.signal;
     renderPreview('compiling');
     const p = (async () => {
       try {
-        const r = await api.compile(text, { typo: state.typoNext });
+        const r = await api.compile(text, { typo: state.typoNext, signal });
         if (mine !== seq) return null;
         state.typoNext = false;
         Object.assign(state.draft, { contract: r.contract, verification: r.verification, attempts: r.attempts || [], source: r.source, compiledText: state.draft.text });
         renderPreview('verified'); updateBtn();
         return r;
       } catch (e) {
-        if (mine !== seq) return null;
+        if (mine !== seq || e.name === 'AbortError') return null;
         renderPreview('error', { message: e.message });
         return null;
       }
@@ -99,7 +121,8 @@ export function mount(root) {
     inflight = { text, p }; p.finally(() => { if (inflight && inflight.p === p) inflight = null; }); return p;
   }
   let ct = null;
-  const compileSoon = () => { clearTimeout(ct); ct = setTimeout(compileNow, 1100); };
+  // Debounce: compile (Claude + verifier) once typing has paused for COMPILE_IDLE_MS; earlier requests are aborted.
+  const compileSoon = () => { clearTimeout(ct); ct = setTimeout(compileNow, COMPILE_IDLE_MS); };
 
   function updateBtn() {
     const ok = state.draft.parsed && state.draft.parsed.milestones.length > 0;
@@ -107,7 +130,10 @@ export function mount(root) {
   }
 
   function onInput(animate) {
-    const text = ta.value; state.draft.text = text;
+    const text = ta.value;
+    if (animate !== true && text === state.draft.text && state.draft.parsed) return; // no real change
+    state.draft.text = text;
+    if (ctl) { ctl.abort(); ctl = null; } inflight = null;
     state.draft.parsed = text.trim() ? parseDeal(text) : null;
     state.draft.contract = null; state.draft.compiledText = null; state.draft.attempts = [];
     seq++;
@@ -133,5 +159,5 @@ export function mount(root) {
   renderPreview(state.draft.contract ? 'verified' : 'drafting'); updateBtn();
   if (!RM()) setTimeout(() => ta.focus({ preventScroll: true }), 120); else ta.focus({ preventScroll: true });
 
-  return { destroy() { typers.forEach((t) => t.cancel()); seq++; clearTimeout(ct); } };
+  return { destroy() { typers.forEach((t) => t.cancel()); seq++; clearTimeout(ct); if (ctl) ctl.abort(); } };
 }
