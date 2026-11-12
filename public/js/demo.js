@@ -8,7 +8,7 @@ import { refreshChrome, subscribeEvents, getCurrent } from './app.js';
 
 const params = new URLSearchParams(location.search);
 const SPEED = Math.max(0.25, parseFloat(params.get('speed')) || 1);
-const TOTAL = 118; // seconds, planned length at speed 1
+const TOTAL = 108; // seconds, planned length at speed 1
 let run = null;
 
 class Aborted extends Error {}
@@ -94,7 +94,7 @@ function fakeScreenshot() {
 async function script() {
   // 1 · hook
   say('Will I get *paid*? Will it get *done*?');
-  await wait(4200);
+  await wait(3600);
   say('Describe the deal. *Plain English.*');
   state.typoNext = true;
   await typeText($('#deal-text'), DEMO_TEXT, 62);
@@ -105,20 +105,20 @@ async function script() {
   await waitFor(find('.fix-note'), 20000);
   await wait(900);
   say('It caught a typo: 30 + 50 + 30 is *110%*. Fixed before anyone saw it.');
-  await wait(4600);
+  await wait(3800);
   await click('.verified button', { settle: 300 });
   say('*214 paths.* Money is conserved on every one.');
-  await wait(3600);
+  await wait(3000);
   await click('.verified button', { settle: 200 });
 
   // 3 · review
   await click('#to-review', { settle: 300 });
   await waitFor(find('#hold-btn'));
   say('Three milestones. Each has a clear *trigger*.');
-  await wait(3200);
+  await wait(2600);
   await click('.ms-card', { settle: 200 });
   say('A URL check, an AI judge, or a timer decides.');
-  await wait(3400);
+  await wait(2800);
 
   // 4 · hold
   say('The client holds *$1,200 with PayPal*. Pactline never touches it.');
@@ -132,13 +132,13 @@ async function script() {
   await click('#pp-approve', { settle: 200 });
   await waitFor(find('#open-deal'), 20000);
   say('*$1,200 held* by PayPal.');
-  await wait(3600);
+  await wait(3000);
   await click('#open-deal', { settle: 300 });
 
   // 5 · live deal
   await waitFor(find('#hero-amt'));
   say('Nothing is paid until *proof passes*.');
-  await wait(3600);
+  await wait(2800);
   const view = () => getCurrent() && getCurrent().api;
   await click('[data-role="freelancer"]', { settle: 300 });
   say('Ava ships the staging site and shares the link.');
@@ -146,7 +146,7 @@ async function script() {
   await click('#submit-m1', { settle: 200 });
   say('URL check passes. *30% releases* from the hold.');
   await waitFor(find('li[data-mid="m1"].s-RELEASED'), 15000);
-  await wait(3800);
+  await wait(3000);
 
   // 6 · AI proof
   say('Now the design. Ava *drops in a screenshot*.');
@@ -163,7 +163,7 @@ async function script() {
   await wait(1200);
   say('*94% match.* 50% releases. Tap the chip for the reasons.');
   await click('li[data-mid="m2"] .verdict button', { settle: 200 });
-  await wait(4200);
+  await wait(3400);
   await click('li[data-mid="m2"] .verdict button', { settle: 200 });
 
   // 7 · timer + completion
@@ -172,21 +172,21 @@ async function script() {
   await click('#skip-days', { settle: 200 });
   await waitFor(find('.hero.done'), 15000);
   say('*$1,200 released.* Nothing left held. Receipts sent.');
-  await wait(5200);
+  await wait(4400);
 
   // 8 · ledger
   await click('#open-ledger', { settle: 300 });
   await waitFor(find('.tl .item button'));
   say('Every PayPal call, on the record.');
-  await wait(3200);
+  await wait(2600);
   const cap1 = [...document.querySelectorAll('.tl .item button')].find((b) => /Released to freelancer/.test(b.textContent));
-  if (cap1) { await click(cap1, { settle: 300 }); say('Capture IDs. Debug IDs. Webhooks. Receipts.'); await wait(4800); }
+  if (cap1) { await click(cap1, { settle: 300 }); say('Capture IDs. Debug IDs. Webhooks. Receipts.'); await wait(4000); }
   const tbl = [...document.querySelectorAll('.seg button')].find((b) => b.textContent === 'Table');
-  if (tbl) { await click(tbl, { settle: 300 }); say('Auditable like a bank statement.'); await wait(3800); }
+  if (tbl) { await click(tbl, { settle: 300 }); say('Auditable like a bank statement.'); await wait(3000); }
 
   // 9 · close
   say('*Pactline.* Deals that pay themselves, held by PayPal.');
-  await wait(5200);
+  await wait(4200);
 }
 
 export async function startDemo() {
