@@ -83,7 +83,7 @@ async function boot() {
     history.replaceState(null, '', location.pathname); location.hash = '#/hold/' + did;
   } else if (params.get('seed')) {
     const d = await api.seed(params.get('seed'));
-    state.deal = d; history.replaceState(null, '', location.pathname);
+    state.deal = d; if (params.get('view')) state.ledgerView = params.get('view'); history.replaceState(null, '', location.pathname);
     location.hash = params.get('then') === 'ledger' ? '#/ledger/' + d.id : d.status === 'AWAITING_FUNDING' || d.status === 'DRAFT' ? '#/hold/' + d.id : '#/deal/' + d.id;
   } else if (params.get('deal')) {
     location.hash = '#/deal/' + params.get('deal');
