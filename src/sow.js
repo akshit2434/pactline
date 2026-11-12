@@ -64,7 +64,7 @@ async function pdfText(buf) {
 /** Plain deal sentence from a contract: what goes into the Describe box for the user to edit. */
 export function contractToText(c) {
   const usd = (cents) => `$${(cents / 100).toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
-  const parts = c.milestones.map((m) => `${m.share_pct}% when ${String(m.criteria || m.title).replace(/\.$/, '').replace(/^./, (x) => x.toLowerCase())}`);
+  const parts = c.milestones.map((m) => `${m.share_pct}% when ${String(m.title || m.criteria).replace(/\.$/, '').replace(/^./, (x) => x.toLowerCase())}`);
   return `${c.title}${c.client?.name ? ` for ${c.client.name}` : ''}, ${usd(c.hold.amount_cents)}: ${parts.join('; ')}.`;
 }
 

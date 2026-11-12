@@ -42,6 +42,7 @@ function createReal() {
     listDeals: async () => (await http('GET', '/api/deals')).deals,
     submit: (id, mid, payload) => http('POST', `/api/deals/${id}/milestones/${mid}/submit`, payload),
     review: (id, mid, decision, note) => http('POST', `/api/deals/${id}/milestones/${mid}/review`, { decision, note }),
+    extract: (filename, data_base64) => http('POST', '/api/contracts/extract', { filename, data_base64 }),
     confirm: (id, mid) => http('POST', `/api/deals/${id}/milestones/${mid}/confirm`, {}),
     dispute: (id, mid, reason, criterion) => http('POST', `/api/deals/${id}/milestones/${mid}/dispute`, { reason, criterion }),
     cancel: (id, reason) => http('POST', `/api/deals/${id}/cancel`, { reason }),

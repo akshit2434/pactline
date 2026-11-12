@@ -555,4 +555,10 @@ body.demo-on .site-foot { display: none; }
 .pop .clauses { margin: 0; padding: 0; display: grid; gap: 8px; }
 .pop .clauses li { display: grid; gap: 2px; list-style: none; font-size: 13px; }
 .pop .clauses q { color: var(--ink); font-style: italic; }
+.sow-chip { cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.sow-preview { display: grid; gap: 8px; padding: 14px; border-radius: var(--r-md); background: var(--surface-2, #f4f6fa); border: 1px solid var(--line); min-width: 0; }
+.sow-preview h3 { margin: 0; font-size: 15px; }
+.sow-preview ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+.sow-preview li { display: grid; gap: 2px; overflow-wrap: anywhere; }
+.sow-preview q { font-size: 13px; color: var(--ink-3); font-style: italic; }
 .pop .clauses .res { font-size: 12px; } .pop .clauses .res.yes { color: var(--green); } .pop .clauses .res.no { color: var(--red, #b42318); } .pop .clauses .res.cannot_tell { color: var(--amber); }

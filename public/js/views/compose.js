@@ -15,13 +15,36 @@ export function mount(root) {
   const preview = h('div', { class: 'card preview', 'aria-live': 'polite' });
   const err = h('div');
   const terms = h('div', { class: 'terms', 'aria-live': 'polite' });
+  // SOW / contract upload: the extracted terms land in the box above for editing; nothing is held until the Hold step.
+  const sowBox = h('div', { class: 'sow-box', id: 'sow-box', 'aria-live': 'polite' });
+  const sowIn = h('input', { type: 'file', id: 'sow-file', accept: '.pdf,.docx,.txt,.md,application/pdf,text/plain,text/markdown', class: 'sr-only' });
+  const sowBtn = h('label', { class: 'chip sow-chip', for: 'sow-file' }, ic('upload', 14), 'Upload SOW');
+  chips.append(sowBtn, sowIn);
+  sowIn.addEventListener('change', async () => {
+    const f = sowIn.files[0]; sowIn.value = '';
+    if (!f) return;
+    if (!/\.(pdf|docx|txt|md)$/i.test(f.name)) { sowBox.replaceChildren(h('p', { class: 'field-error', role: 'alert' }, 'Upload a PDF, Word (.docx), .txt or .md file.')); return; }
+    if (f.size > 2 * 1024 * 1024) { sowBox.replaceChildren(h('p', { class: 'field-error', role: 'alert' }, 'Files up to 2 MB only.')); return; }
+    sowBox.replaceChildren(h('p', { class: 'waiting' }, h('span', { class: 'spinner' }), `Reading ${f.name}…`));
+    try {
+      const bytes = new Uint8Array(await f.arrayBuffer()); let bin = '';
+      for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      const r = await api.extract(f.name, btoa(bin));
+      const byId = Object.fromEntries((r.quotes || []).map((q) => [q.milestone_id, q.quote]));
+      sowBox.replaceChildren(h('div', { class: 'sow-preview' },
+        h('h3', null, 'Extracted from your document'),
+        h('p', { class: 'hint' }, `${f.name} · ${money(r.contract.hold.amount_cents, { compact: true })} · ${r.verification.ok ? 'verified' : 'needs fixes'}. Edit the terms above before you continue; no money is held yet.`),
+        h('ol', null, r.contract.milestones.map((m) => h('li', null, h('strong', null, `${m.title} · ${money(m.amount_cents, { compact: true })}`), byId[m.id] ? h('q', null, byId[m.id]) : h('span', { class: 'hint' }, 'No matching sentence found in the document'))))));
+      fill(r.text);
+    } catch (e) { sowBox.replaceChildren(h('p', { class: 'field-error', role: 'alert' }, e.message || 'Could not read that file.')); }
+  });
 
   const page = h('section', { class: 'page' },
     h('div', { class: 'compose-head enter' },
       h('h1', null, 'Describe the deal'),
       h('p', { class: 'lede' }, 'Plain English. PayPal holds the money; proof releases it.')),
     h('div', { class: 'compose-grid' },
-      h('div', { class: 'card composer enter', style: { animationDelay: '.06s' } }, ta, chips, terms, err,
+      h('div', { class: 'card composer enter', style: { animationDelay: '.06s' } }, ta, chips, sowBox, terms, err,
         h('div', { class: 'composer-foot' }, h('span', { class: 'hint' }, h('kbd', null, 'Ctrl'), '+', h('kbd', null, '↵')), go)),
       preview));
   root.append(page);

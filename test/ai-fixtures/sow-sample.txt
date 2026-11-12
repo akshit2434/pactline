@@ -1,0 +1,5 @@
+Statement of work: Landing page for Northwind Traders.
+Total price $1,200.
+30% when the staging URL is live.
+50% when the design matches the mockup.
+20% after 7 days with no open bugs.
