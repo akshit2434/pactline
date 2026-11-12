@@ -4,7 +4,7 @@
 
 | Area | What changed |
 |---|---|
-| Runtime model | Every Claude call (compiler, repair, judge, explain, SOW/PDF reading) uses `claude-haiku-5-5` at effort `max` (probed live: max, xhigh, high all accepted). Override: `PACTLINE_AI_MODEL`, `PACTLINE_AI_EFFORT`. Live eval: 22/23 (see README). |
+| Runtime model | Every Claude call (compiler, repair, judge, explain, SOW/PDF reading) uses `claude-haiku-5-5` at effort `high` (max was accepted but too slow for a live demo). Override: `PACTLINE_AI_MODEL`, `PACTLINE_AI_EFFORT`. Live eval at effort high: 23/23 on 13 Nov 2026. |
 | Client confirmation window | A passed proof waits `PACTLINE_CONFIRM_DAYS` (3) days: Confirm now, Dispute (reason + unmet criterion required) or silence (auto-release at expiry). Disputes pause release, add a `dispute` ledger row and a deterministic summary shown to both sides. Proof routed to review never auto-releases. |
 | SOW upload | Describe takes PDF, .docx, .txt, .md (2 MB, extension + magic-byte check, no remote fetch). Text goes through the normal compile + verifier + terms check; preview shows a source quote per milestone and the terms land in the editable box before any hold. PDFs need AI; text files work offline. |
 | Criteria-locked judging | Judge returns clause (verbatim from the brief), seen, result per requirement; the verdict popover shows them. Proof files get a sha256 fingerprint; reuse on another milestone or deal forces human review. |

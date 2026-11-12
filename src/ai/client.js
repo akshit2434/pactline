@@ -4,8 +4,8 @@ import Anthropic from '@anthropic-ai/sdk';
 
 export const DEFAULT_MODEL = process.env.PACTLINE_AI_MODEL || 'claude-haiku-5-5';
 export const ESCALATE_MODEL = process.env.PACTLINE_AI_ESCALATE_MODEL || 'claude-haiku-5-5';
-// Highest effort the API accepts for Haiku 5.5 (probed live: max). Override with PACTLINE_AI_EFFORT.
-export const DEFAULT_EFFORT = process.env.PACTLINE_AI_EFFORT || 'max';
+// Haiku 5.5 at high effort (founder's choice; max was too slow for a live demo). Override with PACTLINE_AI_EFFORT.
+export const DEFAULT_EFFORT = process.env.PACTLINE_AI_EFFORT || 'high';
 
 export class AiUnavailable extends Error {
   constructor(message, cause) { super(message); this.name = 'AiUnavailable'; this.cause = cause; }
