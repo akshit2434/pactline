@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pactline · Deals that pay themselves</title>
+  <meta name="description" content="Describe a deal in plain English. PayPal holds the money, proof releases it.">
+  <meta name="color-scheme" content="light dark">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23003087'/%3E%3Cpath d='M9 12h14M9 20h9' stroke='%23fff' stroke-width='3' stroke-linecap='round'/%3E%3Ccircle cx='23' cy='20' r='2.4' fill='%2338b2ff'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+  <script>try{var t=localStorage.getItem('pl-theme');if(t)document.documentElement.dataset.theme=t}catch(e){}</script>
+</head>
+<body>
+  <a class="skip" href="#view">Skip to content</a>
+  <div id="demo-progress" class="demo-progress" hidden><i></i></div>
+
+  <header class="top" id="top">
+    <a class="brand" href="#/" aria-label="Pactline home">
+      <span class="mark" aria-hidden="true"><svg viewBox="0 0 32 32" width="30" height="30"><rect width="32" height="32" rx="9" fill="currentColor"/><path d="M9 12h14M9 20h9" stroke="#fff" stroke-width="3" stroke-linecap="round"/><circle cx="23" cy="20" r="2.4" fill="#38b2ff"/></svg></span>
+      <span class="brand-name">Pactline</span>
+    </a>
+    <nav class="steps" id="steps" aria-label="Progress"></nav>
+    <div class="top-right">
+      <span class="pill status" id="status-pill"><i class="dot"></i><span>…</span></span>
+      <a class="btn ghost sm" id="ledger-link" href="#/ledger" hidden>Ledger</a>
+      <button class="btn ghost sm demo-btn" id="demo-btn" type="button" aria-pressed="false" title="Auto-play the happy path (D)"></button>
+      <button class="icon-btn" id="theme-btn" type="button" aria-label="Toggle dark theme"></button>
+    </div>
+  </header>
+
+  <main id="view" tabindex="-1"></main>
+
+  <div id="sheet-root"></div>
+  <div id="toasts" aria-live="polite"></div>
+  <div id="sr-live" class="sr-only" aria-live="polite"></div>
+
+  <div id="caption" class="caption" hidden aria-live="polite"><span></span></div>
+  <div id="demo-ctl" class="demo-ctl" hidden>
+    <button type="button" class="btn ghost sm" id="demo-pause">Pause</button>
+    <button type="button" class="btn ghost sm" id="demo-stop">Exit demo <kbd>Esc</kbd></button>
+  </div>
+  <div id="ghost" class="ghost-cursor" hidden aria-hidden="true"><svg viewBox="0 0 24 24" width="28" height="28"><path d="M5 3l14 7-6 2-2 6z" fill="#0B1B3A" stroke="#fff" stroke-width="1.5" stroke-linejoin="round"/></svg></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

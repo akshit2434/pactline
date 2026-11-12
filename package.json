@@ -1,0 +1,11 @@
+{
+  "name": "pactline",
+  "version": "1.0.0",
+  "description": "Plain-English deals that pay themselves, held by PayPal. AI compiles the contract, a model checker verifies it, PayPal authorization holds guarantee the money.",
+  "license": "MIT",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": { "start": "node src/server.js", "test": "node --test test/", "smoke": "node scripts/live-smoke.js" },
+  "dependencies": { "@anthropic-ai/sdk": "^1.8.0", "express": "^4.21.0" },
+  "devDependencies": { "playwright-core": "^1.50.0" }
+}
