@@ -14,7 +14,7 @@ The backend runs fully with no PayPal keys (mock adapter) and with no LLM key (d
 `GET /api/status`
 ```json
 { "paypal": "live|mock", "currency": "USD",
-  "ai": { "compiler": "claude|claude-cli|fallback", "judge": "claude-vision|claude-cli|heuristic", "model": "claude-sonnet-5-5" },
+  "ai": { "compiler": "claude|claude-cli|fallback", "judge": "claude-vision|claude-cli|heuristic", "model": "claude-haiku-5-5" },
   "clock": { "now": "2026-11-12T18:00:00.000Z", "offset_days": 0 },
   "webhooks": { "verify": "paypal|simulated-only", "public_url": null } }
 ```

@@ -15,7 +15,7 @@ Shapes match `API.md` (integer cents, USD). Extra fields are additive.
 ```js
 { ok: true,                        // false only if even the fallback could not build a valid contract
   source: 'claude' | 'fallback',
-  model: 'claude-sonnet-5-5' | null,
+  model: 'claude-haiku-5-5' | null,
   contract: {                      // the API.md Contract shape
     title, currency: 'USD',
     client: { name, email|null }, freelancer: { name, email|null },
@@ -49,7 +49,7 @@ Local validation (always run, also on model output): `SCHEMA`, `TOTAL_MISMATCH` 
   injection_detected: boolean,              // text in an image/note tried to instruct the judge
   escalated?: true, fallback_reason?: string,
   by: 'claude-vision' | 'heuristic',
-  model: 'claude-sonnet-5-5' | 'claude-opus-5-5' | null }
+  model: 'claude-haiku-5-5' | null }
 ```
 Rules the backend can rely on (enforced in code, not only in the prompt): if injection is detected a `pass` is downgraded to `unclear` (confidence ≤ 0.5); the offline heuristic **never** returns `pass` (it has not looked at the files) and its confidence is ≤ 0.6, so it can never cross the release bar. No evidence at all → `unclear` 0.2 without a model call. Suggested backend mapping: `pass && confidence >= 0.8` → release; `fail && confidence >= 0.8` → rejected; else `NEEDS_REVIEW`.
 
@@ -70,4 +70,4 @@ For `GET /api/status`.
 ## Calls Claude how
 `client.beta.messages.create` with `output_config.format` = JSON schema (structured outputs), `output_config.effort` medium, server-side refusal fallbacks (`fallbacks: "default"`). Vision: base64 `image` blocks, PDFs as `document` blocks, text files inlined. The submission is wrapped as untrusted data after the milestone block; the trust rules live in the system prompt.
 
-Env: `ANTHROPIC_API_KEY` (absent → fallbacks), `PACTLINE_AI_MODEL` (default `claude-sonnet-5-5`), `PACTLINE_AI_ESCALATE_MODEL` (default `claude-opus-5-5`), `PACTLINE_AI_OFFLINE=1` forces fallbacks (tests).
+Env: `ANTHROPIC_API_KEY` (absent → fallbacks), `PACTLINE_AI_MODEL` (default `claude-haiku-5-5`), `PACTLINE_AI_EFFORT` (default `max`), `PACTLINE_AI_ESCALATE_MODEL` (default `claude-haiku-5-5`), `PACTLINE_AI_OFFLINE=1` forces fallbacks (tests).
