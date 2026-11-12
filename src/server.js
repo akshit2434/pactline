@@ -8,6 +8,7 @@ import { createEngine, EngineError } from './engine.js';
 import { aiStatus, explainEvent } from './ai/index.js';
 import { verifyContract } from './core/verify.js';
 import { compileText } from './compile.js';
+import { extractSow } from './sow.js';
 import { DEMO_TEXT, demoContract } from './demo.js';
 import { applyPublicMode } from './public/mode.js';
 
@@ -41,6 +42,7 @@ app.get('/api/status', (_req, res) => res.json({
 app.post('/api/contracts/compile', wrap(async (req, res) => { res.json(await compileText(String(req.body?.text || ''))); }));
 app.post('/api/contracts/typo', wrap(async (req, res) => { res.json(await compileText(String(req.body?.text || DEMO_TEXT), { forceTypo: true })); }));
 app.post('/api/contracts/verify', wrap(async (req, res) => { res.json(verifyContract(req.body?.contract)); }));
+app.post('/api/contracts/extract', wrap(async (req, res) => { res.json(await extractSow({ filename: req.body?.filename, data_base64: req.body?.data_base64 })); }));
 app.get('/api/demo/contract', (_req, res) => res.json({ text: DEMO_TEXT, contract: demoContract(config.publicBaseUrl) }));
 // A tiny "staging site" the demo's URL oracle can check (returns 200 and shows the client's headline).
 app.get('/demo/staging', (_req, res) => res.type('html').send('<!doctype html><meta charset=utf-8><title>Northwind Traders: staging</title><body style="font:18px system-ui;max-width:640px;margin:10vh auto;padding:0 20px"><h1>Northwind Traders</h1><p>Staging build of the new landing page. Hero, pricing table and footer are live.</p></body>'));
