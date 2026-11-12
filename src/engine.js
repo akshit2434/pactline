@@ -9,12 +9,24 @@ import { normalizeContract } from './core/contract.js';
 import { runOracle } from './oracles/index.js';
 import { MockEscrow } from './paypal/escrow.js';
 
+/** Deterministic, neutral dispute summary shown to both parties (no model involved). */
+export function disputeSummary(cm, x) {
+  const v = x.verdict || {}; const dp = x.dispute || {};
+  const checker = v.verdict ? `The checker said ${v.verdict} (${Math.round((v.confidence || 0) * 100)}% confident): ${(v.reasons || [])[0] || 'no reason given'}.` : 'No automatic check ran.';
+  return {
+    summary: `Dispute on "${cm.title}". Criterion in question: "${dp.criterion}". Client's reason: "${dp.reason}". ${checker} Money stays held until this is resolved.`,
+    for_freelancer: `The client says this criterion is not met: "${dp.criterion}". Send proof that shows it, or agree a fix.`,
+    for_client: `You disputed "${dp.criterion}". Release if new proof meets it; otherwise reject and the money stays held.`,
+  };
+}
+
 export class EngineError extends Error { constructor(code, message, status = 400, extra = {}) { super(message); this.code = code; this.status = status; Object.assign(this, extra); } }
 
 const RELEASE_CONFIDENCE = 0.8;
 const usd = (c) => `$${(c / 100).toFixed(2)}`;
 
-export function createEngine({ escrow, baseUrl, dataFile, now = () => Date.now(), ai = {} }) {
+export function createEngine({ escrow, baseUrl, dataFile, now = () => Date.now(), ai = {}, confirmDays = 0 }) {
+  // confirmDays > 0: a passed proof waits for the client (Confirm now / Dispute); silence releases at expiry.
   const mockEscrow = new MockEscrow();
   const deals = new Map();
   const events = []; const ledger = []; const subscribers = new Set();
@@ -57,7 +69,7 @@ export function createEngine({ escrow, baseUrl, dataFile, now = () => Date.now()
       milestones: d.contract.milestones.map((cm) => {
         const sm = st.milestones.find((x) => x.id === cm.id); const x = d.ms[cm.id] || {};
         return { id: cm.id, title: cm.title, share_pct: cm.share_pct, amount_cents: cm.amount_cents, depends_on: cm.depends_on || [], oracle: cm.oracle, criteria: cm.criteria || '', due_day: cm.due_day ?? null, proof_type: cm.proof_type || null,
-          status: sm.status, evidence: x.evidence || null, verdict: x.verdict || null, review: x.review || null, capture_id: x.capture_id || null, released_at: x.released_at || null, receipt: x.receipt || null };
+          status: x.confirmation?.status === 'pending' ? 'AWAITING_CONFIRMATION' : sm.status, confirmation: x.confirmation || null, dispute: x.dispute || null, evidence: x.evidence || null, verdict: x.verdict || null, review: x.review || null, capture_id: x.capture_id || null, released_at: x.released_at || null, receipt: x.receipt || null };
       }),
       clock: { now: new Date(now()).toISOString(), day: st.day }, version: d.version,
     };
@@ -169,7 +181,12 @@ export function createEngine({ escrow, baseUrl, dataFile, now = () => Date.now()
     d.ms[mid].verdict = { verdict: v.verdict, confidence: v.confidence, reasons: v.reasons, by: v.by, injection_detected: !!v.injection_detected };
     row(d, v.by === 'claude-vision' || v.by === 'heuristic' ? 'judge' : 'oracle', { milestone_id: mid, status: v.verdict.toUpperCase(), note: `${v.by}: ${v.verdict} (${Math.round(v.confidence * 100)}%): ${v.reasons[0]}` });
     const outcome = pickOutcome(v);
-    if (outcome === 'release') await release(d, mid, 'oracle');
+    if (outcome === 'release' && confirmDays > 0) {
+      d.state = (await transition(d, { type: 'REVIEW', id: mid })).state;
+      d.ms[mid].confirmation = { status: 'pending', opened_day: d.state.day, until_day: d.state.day + confirmDays, days: confirmDays };
+      row(d, 'state', { milestone_id: mid, status: 'AWAITING_CONFIRMATION', note: `Proof passed. ${usd(cm.amount_cents)} waits ${confirmDays} days for the client to confirm or dispute; silence releases it on day ${d.state.day + confirmDays}` });
+      emit('milestone.awaiting_confirmation', d, { milestone_id: mid, summary: `${mid} passed: waiting for client confirmation` });
+    } else if (outcome === 'release') await release(d, mid, 'oracle');
     else if (outcome === 'reject') {
       d.state = (await transition(d, { type: 'REJECT', id: mid })).state;
       emit('milestone.rejected', d, { milestone_id: mid, summary: `${mid} rejected: ${v.reasons[0]}` });
@@ -179,7 +196,7 @@ export function createEngine({ escrow, baseUrl, dataFile, now = () => Date.now()
       emit('milestone.needs_review', d, { milestone_id: mid, summary: `${mid} needs a human decision: ${v.reasons[0]}` });
     }
     touch(d);
-    return { deal: toApi(d), result: { verdict: v.verdict, confidence: v.confidence, reasons: v.reasons, by: v.by, outcome: outcome === 'release' ? 'released' : outcome === 'reject' ? 'rejected' : 'needs_review' } };
+    return { deal: toApi(d), result: { verdict: v.verdict, confidence: v.confidence, reasons: v.reasons, by: v.by, outcome: d.ms[mid].confirmation?.status === 'pending' ? 'awaiting_confirmation' : outcome === 'release' ? 'released' : outcome === 'reject' ? 'rejected' : 'needs_review' } };
   }
 
   async function release(d, mid, by) {
@@ -195,10 +212,41 @@ export function createEngine({ escrow, baseUrl, dataFile, now = () => Date.now()
     const sm = d.state.milestones.find((m) => m.id === mid); if (!sm) throw new EngineError('NOT_FOUND', `No milestone ${mid}`, 404);
     if (!['release', 'reject'].includes(decision)) throw new EngineError('BAD_INPUT', 'decision must be release or reject', 400);
     d.ms[mid] = { ...(d.ms[mid] || {}) };
+    if (d.ms[mid].confirmation?.status === 'pending') d.ms[mid].confirmation = { ...d.ms[mid].confirmation, status: decision === 'release' ? 'confirmed' : 'disputed', decided_day: d.state.day };
     d.ms[mid].verdict = { ...(d.ms[mid].verdict || {}), verdict: decision === 'release' ? 'pass' : 'fail', confidence: 1, reasons: [note || `Client decided to ${decision}`], by: 'human' };
     if (decision === 'release') await release(d, mid, 'human');
     else { d.state = (await transition(d, { type: 'REJECT', id: mid })).state; emit('milestone.rejected', d, { milestone_id: mid, summary: `${mid} rejected by the client` }); }
     row(d, 'state', { milestone_id: mid, note: `Human decision: ${decision}${note ? ` (${note})` : ''}` });
+    touch(d); return toApi(d);
+  }
+
+  // ---------- client confirmation window ----------
+  const pendingConf = (d, mid) => {
+    if (!d.contract.milestones.some((m) => m.id === mid)) throw new EngineError('NOT_FOUND', `No milestone ${mid}`, 404);
+    const c = d.ms[mid]?.confirmation;
+    if (!c || c.status !== 'pending') throw new EngineError('BAD_STATE', c ? `${mid} was already ${c.status}` : `${mid} is not waiting for confirmation`, 409);
+    return c;
+  };
+  const confirm = (...a) => locked(a[0], () => confirmImpl(...a));
+  async function confirmImpl(id, mid) {
+    const d = get(id); const c = pendingConf(d, mid);
+    d.ms[mid].confirmation = { ...c, status: 'confirmed', decided_day: d.state.day };
+    row(d, 'state', { milestone_id: mid, status: 'CONFIRMED', note: `Client confirmed ${mid} on day ${d.state.day}` });
+    await release(d, mid, 'client');
+    touch(d); return toApi(d);
+  }
+  const dispute = (...a) => locked(a[0], () => disputeImpl(...a));
+  async function disputeImpl(id, mid, { reason, criterion } = {}) {
+    const d = get(id); const c = pendingConf(d, mid);
+    const cm = d.contract.milestones.find((m) => m.id === mid);
+    const why = String(reason || '').trim().slice(0, 600); const crit = String(criterion || '').trim().slice(0, 300);
+    if (why.length < 10) throw new EngineError('BAD_INPUT', 'A dispute needs a reason of at least 10 characters', 400);
+    if (!crit) throw new EngineError('BAD_INPUT', 'A dispute must name the unmet criterion', 400);
+    d.ms[mid].confirmation = { ...c, status: 'disputed', decided_day: d.state.day };
+    d.ms[mid].dispute = { reason: why, criterion: crit, day: d.state.day, by: 'client' };
+    d.ms[mid].review = disputeSummary(cm, d.ms[mid]);
+    row(d, 'dispute', { milestone_id: mid, status: 'DISPUTED', amount_cents: cm.amount_cents, note: `Client disputed ${mid}: "${crit}" not met (${why.slice(0, 120)}). Release paused; money stays held` });
+    emit('milestone.disputed', d, { milestone_id: mid, summary: `${mid} disputed: release paused` });
     touch(d); return toApi(d);
   }
 
@@ -233,6 +281,15 @@ export function createEngine({ escrow, baseUrl, dataFile, now = () => Date.now()
           row(d, 'oracle', { milestone_id: cm.id, status: 'PASS', note: `timer: waiting period of ${cm.oracle.after_days} days is over` });
           await release(d, cm.id, 'timer'); progressed = true;
         }
+      }
+    }
+    // client confirmation windows: silence releases at expiry
+    for (const cm of d.contract.milestones) {
+      const c = d.ms[cm.id]?.confirmation;
+      if (c?.status === 'pending' && day >= c.until_day && day < d.state.deadline_day && d.state.status === 'ACTIVE') {
+        d.ms[cm.id].confirmation = { ...c, status: 'auto_released', decided_day: c.until_day };
+        row(d, 'state', { milestone_id: cm.id, status: 'AUTO_RELEASED', note: `No response from the client in ${c.days} days: ${cm.id} releases automatically` });
+        await release(d, cm.id, 'confirm-window');
       }
     }
     // honour window: a PayPal authorization is honoured for 3 days; reauthorize to keep the guarantee alive
@@ -285,7 +342,7 @@ export function createEngine({ escrow, baseUrl, dataFile, now = () => Date.now()
   }
 
   return {
-    createDeal, get, toApi, startFunding, completeFunding, submit, review, cancel, advanceClock, handleWebhook, seedDemo,
+    createDeal, get, toApi, startFunding, completeFunding, submit, review, confirm, dispute, cancel, advanceClock, handleWebhook, seedDemo,
     list: () => [...deals.values()].sort((a, b) => b.created_at.localeCompare(a.created_at)),
     ledger: (dealId) => ledger.filter((r) => !dealId || r.deal_id === dealId),
     events: (since = 0, dealId) => events.filter((e) => e.id > since && (!dealId || e.deal_id === dealId)),

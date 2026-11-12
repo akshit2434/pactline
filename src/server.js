@@ -15,7 +15,7 @@ const pp = await createPayPal().catch((e) => { console.error('[paypal] live setu
 const live = pp && pp.mode === 'live';
 const invPP = live && config.paypal.invoicingClientId && config.paypal.invoicingClientId !== config.paypal.clientId ? new LivePayPal({ ...config.paypal, clientId: config.paypal.invoicingClientId, clientSecret: config.paypal.invoicingClientSecret, currency: 'USD' }) : null;
 const escrow = live ? new LiveEscrow(pp, invPP) : new MockEscrow();
-const engine = createEngine({ escrow, baseUrl: config.publicBaseUrl, dataFile: path.join(config.dataDir, 'pactline-state.json') });
+const engine = createEngine({ escrow, baseUrl: config.publicBaseUrl, dataFile: path.join(config.dataDir, 'pactline-state.json'), confirmDays: Number(process.env.PACTLINE_CONFIRM_DAYS ?? 3) });
 
 const app = express();
 app.disable('x-powered-by');
@@ -59,6 +59,8 @@ app.post('/api/deals/:id/milestones/:mid/submit', wrap(async (req, res) => {
   const b = req.body || {}; res.json(await engine.submit(req.params.id, req.params.mid, { text: b.text, url: b.url, image_data_url: b.image_data_url }));
 }));
 app.post('/api/deals/:id/milestones/:mid/review', wrap(async (req, res) => { res.json(await engine.review(req.params.id, req.params.mid, req.body?.decision, req.body?.note)); }));
+app.post('/api/deals/:id/milestones/:mid/confirm', wrap(async (req, res) => { res.json(await engine.confirm(req.params.id, req.params.mid)); }));
+app.post('/api/deals/:id/milestones/:mid/dispute', wrap(async (req, res) => { res.json(await engine.dispute(req.params.id, req.params.mid, { reason: req.body?.reason, criterion: req.body?.criterion })); }));
 app.post('/api/deals/:id/cancel', wrap(async (req, res) => { res.json(await engine.cancel(req.params.id, req.body?.reason)); }));
 app.post('/api/deals/:id/clock', wrap(async (req, res) => { res.json(await engine.advanceClock(req.params.id, Number(req.body?.advance_days) || 0)); }));
 app.get('/api/deals/:id/ledger', wrap(async (req, res) => { engine.get(req.params.id); res.json({ rows: engine.ledger(req.params.id) }); }));
