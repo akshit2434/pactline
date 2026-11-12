@@ -132,3 +132,12 @@ Polling fallback: `GET /api/events/poll?since=40` returns `{ "events": [...], "l
 
 `POST /api/demo/seed` `{ "stage": "draft|awaiting|funded|midway|done|cancelled" }` creates a sample deal in memory (mock money, no PayPal calls) and returns the `Deal`. `midway` = funded, m1 released, m2 in `NEEDS_REVIEW`, m3 pending, with matching ledger rows. `POST /api/demo/reset` clears all in-memory deals (mock mode only).
 `GET /api/demo/contract` returns the canonical demo `Contract` and the canonical demo sentence: `{ "text": "...", "contract": {...} }`.
+
+## Additions in v1.1 (additive, nothing above changed)
+
+- `Deal.mock` (boolean): true for seeded demo deals, whose money is simulated even when the server is live.
+- `GET /demo/staging` serves a tiny "Northwind Traders" staging page (200) so the demo's URL oracle has something real to check. The canonical demo contract's `m1` URL oracle points at it.
+- Milestone `evidence.url` submitted for a URL-ish milestone (title/criteria mention url, staging, site, live; or `proof_type: "url"`) is checked by the URL oracle even when the contract carried no URL.
+- Ledger rows with `kind: "webhook"` have `status: "VERIFIED"` for a real PayPal-signed event, `"SIMULATED"` for `/api/webhooks/simulate`.
+- Ledger `call` strings use PayPal path templates (`POST /v2/payments/authorizations/{id}/capture`); `debug_id` is PayPal's `paypal-debug-id` header for live calls.
+- Errors from PayPal during a release/cancel come back as 502 `PAYPAL_ERROR` and leave the deal state unchanged.
