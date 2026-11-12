@@ -32,6 +32,9 @@ export async function runOracle(milestone, evidence = {}, hooks = {}) {
   if (o.type === 'github_pr') return githubPrOracle(o);
   if (o.type === 'manual') return { verdict: 'unclear', confidence: 0.5, reasons: ['Waiting for the client to approve'], by: 'human' };
   if (o.type === 'deadline') return { verdict: 'unclear', confidence: 0.5, reasons: ['Released automatically when the waiting period ends'], by: 'timer' };
+  // "staging URL is live"-style milestone whose contract carried no URL: check the URL supplied at submission time
+  const urlish = milestone.proof_type === 'url' || /\b(url|staging|site|website|link|live)\b/i.test(`${milestone.title} ${milestone.criteria || ''}`);
+  if (evidence.url && !evidence.image_data_url && urlish) return urlOracle({ url: evidence.url, contains: o.contains });
   const files = evidence.image_data_url ? [{ data_url: evidence.image_data_url }] : undefined;
   const v = await (hooks.checkProof || checkProof)({ milestone, text: evidence.text, url: evidence.url, files });
   return { verdict: v.verdict, confidence: v.confidence, reasons: v.reasons?.length ? v.reasons : [v.reason], by: v.by, injection_detected: v.injection_detected, evidence: v.evidence, model: v.model };

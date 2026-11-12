@@ -14,7 +14,7 @@ export function autoRepair(contract, errors) {
     codes.add('TOTAL_MISMATCH');
   }
   if (codes.has('TOTAL_MISMATCH') && ms.length) { const a = allocate(c.hold.amount_cents, ms.map((m) => m.share_pct)); ms.forEach((m, i) => (m.amount_cents = a[i])); }
-  if (codes.has('BAD_ORACLE')) ms.forEach((m) => { const o = m.oracle; if (o && ((o.type === 'url' && !/^https?:\/\//i.test(o.url || '')) || (o.type === 'github_pr' && (!/^[\w.-]+\/[\w.-]+$/.test(o.repo || '') || !Number.isInteger(o.number))))) m.oracle = { type: 'evidence' }; }); // no checkable target given: fall back to AI/human evidence review
+  if (codes.has('BAD_ORACLE')) ms.forEach((m) => { const o = m.oracle; if (o && ((o.type === 'url' && !/^https?:\/\//i.test(o.url || '')) || (o.type === 'github_pr' && (!/^[\w.-]+\/[\w.-]+$/.test(o.repo || '') || !Number.isInteger(o.number))))) { if (o.type === 'url') m.proof_type = 'url'; m.oracle = { type: 'evidence' }; } }); // no checkable target given: fall back to AI/human evidence review
   if (codes.has('HOLD_TOO_LONG')) c.hold.window_days = MAX_HOLD_DAYS;
   if (codes.has('DEADLINE_AFTER_HOLD')) { c.hold.window_days = Math.min(MAX_HOLD_DAYS, Math.max(c.hold.window_days || 0, c.deadline.day)); if (c.deadline.day > MAX_HOLD_DAYS) c.deadline.day = MAX_HOLD_DAYS; }
   return c;
