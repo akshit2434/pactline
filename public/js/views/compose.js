@@ -3,6 +3,7 @@ import { api } from '../api.js';
 import { state, nav } from '../state.js';
 import { parseDeal, EXAMPLES } from '../parse.js';
 import { verifiedBadge } from '../components.js';
+import { lintDeal, applyFix } from '../lint.js';
 
 export const COMPILE_IDLE_MS = 550;
 
@@ -13,13 +14,14 @@ export function mount(root) {
   const chips = h('div', { class: 'chips', role: 'group', 'aria-label': 'Examples' }, EXAMPLES.map((e) => h('button', { class: 'chip', type: 'button', onclick: () => fill(e.text) }, e.label)));
   const preview = h('div', { class: 'card preview', 'aria-live': 'polite' });
   const err = h('div');
+  const terms = h('div', { class: 'terms', 'aria-live': 'polite' });
 
   const page = h('section', { class: 'page' },
     h('div', { class: 'compose-head enter' },
       h('h1', null, 'Describe the deal'),
       h('p', { class: 'lede' }, 'Plain English. PayPal holds the money; proof releases it.')),
     h('div', { class: 'compose-grid' },
-      h('div', { class: 'card composer enter', style: { animationDelay: '.06s' } }, ta, chips, err,
+      h('div', { class: 'card composer enter', style: { animationDelay: '.06s' } }, ta, chips, terms, err,
         h('div', { class: 'composer-foot' }, h('span', { class: 'hint' }, h('kbd', null, 'Ctrl'), '+', h('kbd', null, '↵')), go)),
       preview));
   root.append(page);
@@ -110,7 +112,7 @@ export function mount(root) {
         if (mine !== seq) return null;
         state.typoNext = false;
         Object.assign(state.draft, { contract: r.contract, verification: r.verification, attempts: r.attempts || [], source: r.source, compiledText: state.draft.text });
-        renderPreview('verified'); updateBtn();
+        renderPreview('verified'); updateBtn(); paintTerms();
         return r;
       } catch (e) {
         if (mine !== seq || e.name === 'AbortError') return null;
@@ -123,6 +125,22 @@ export function mount(root) {
   let ct = null;
   // Debounce: compile (Claude + verifier) once typing has paused for COMPILE_IDLE_MS; earlier requests are aborted.
   const compileSoon = () => { clearTimeout(ct); ct = setTimeout(compileNow, COMPILE_IDLE_MS); };
+
+  // Terms check: refreshed only when typing pauses, and only repainted when the findings actually change.
+  let termsSig = '';
+  function paintTerms() {
+    const issues = state.draft.parsed ? lintDeal(state.draft.text) : [];
+    const sig = JSON.stringify(issues);
+    if (sig === termsSig) return;
+    termsSig = sig;
+    if (!issues.length) { terms.replaceChildren(); return; }
+    terms.replaceChildren(
+      h('div', { class: 'terms-head' }, ic('sparkle', 16), h('b', null, 'Terms check'), h('span', null, issues.length === 1 ? 'One phrase could cause a dispute' : `${issues.length} phrases could cause a dispute`)),
+      h('ul', null, issues.map((i) => h('li', null,
+        h('span', { class: 'terms-txt' }, i.phrase ? h('q', null, i.phrase) : null, ' ', i.problem, ' ', h('span', { class: 'terms-sug' }, 'Try: ', h('q', null, i.replace || i.append.replace(/^;\s*/, '')))),
+        h('button', { class: 'btn ghost sm', type: 'button', onclick: () => { ta.value = applyFix(ta.value, i); onInput(false); ta.focus(); } }, 'Use this')))));
+    window.dispatchEvent(new CustomEvent('pactline:terms', { detail: { count: issues.length } }));
+  }
 
   function updateBtn() {
     const ok = state.draft.parsed && state.draft.parsed.milestones.length > 0;
@@ -156,7 +174,7 @@ export function mount(root) {
 
   // restore draft when coming back from review
   if (state.draft.text) { ta.value = state.draft.text; state.draft.parsed = parseDeal(state.draft.text); }
-  renderPreview(state.draft.contract ? 'verified' : 'drafting'); updateBtn();
+  renderPreview(state.draft.contract ? 'verified' : 'drafting'); updateBtn(); paintTerms();
   if (!RM()) setTimeout(() => ta.focus({ preventScroll: true }), 120); else ta.focus({ preventScroll: true });
 
   return { destroy() { typers.forEach((t) => t.cancel()); seq++; clearTimeout(ct); if (ctl) ctl.abort(); } };

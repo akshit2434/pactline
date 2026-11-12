@@ -10,7 +10,8 @@
 | Flexible milestone counts | 2-, 3-, 4- and 5-milestone deals compile, verify and run end to end (hold, prove, capture, void). Live Claude: 2 milestones → 32 paths verified; 4 milestones → 1,697 paths. Offline: 5 milestones → 17,434 paths. The example chips now cover 2 (Logo kit), 3 (Landing page) and 4 (App MVP) milestones. |
 | Overflow | `scripts/ui-shots.mjs` captures every screen at 1920, 1280 and 390 wide and flags elements that leave the viewport. No page-level overflow was found. The only flag was the decorative hero glow, which is clipped inside its card. |
 | PayPal logo | The official logo, fetched unaltered from paypalobjects.com, appears on the hold screen, in the deal hero ("Held by PayPal") and in a new footer ("Payments held by PayPal", plus a not-affiliated line). It sits on a white tile with clear space. See `assets/paypal/README.md`. |
-| Tests | `test/polish.test.js` (7 tests): 2-, 4- and 5-milestone deals end to end, 2-milestone cancel/void arithmetic, 4-milestone dependencies and resubmit after reject, webhook replay, and double capture. Full suite: 86/86 pass (was 79). |
+| Terms check (new) | After typing pauses, the composer flags wording nobody can verify ("when it is done", "client is happy", "looks good", "asap", unnamed mockup parts, no end date) and offers an exact rewrite, applied with one click. It is deterministic (`public/js/lint.js`), so it is free, instant and safe on the public demo. A Claude-written version is roadmap item 1. |
+| Tests | `test/polish.test.js` (7 tests) and `test/lint.test.js` (3 tests): 2-, 4- and 5-milestone deals end to end, 2-milestone cancel/void arithmetic, 4-milestone dependencies and resubmit after reject, webhook replay, and double capture. Full suite: 89/89 pass (was 79). In headless Chrome, typing a 150-character deal at 25 ms per key sent one compile request. |
 
 ## Honest current limits
 
@@ -28,7 +29,7 @@ Effort: S = under a day, M = 2 to 4 days, L = a week or more.
 
 | # | Feature | Effort | Why it matters |
 |---|---|---|---|
-| 1 | **Vague-terms check before compile.** Claude flags acceptance criteria nobody can check ("looks good", "when done", no deadline, no URL) and suggests exact wording, applied in one click. It can ride on the compile call, so it costs no extra request. | S | Most freelance disputes start with a vague brief. Fixing it before money is held is the cheapest point. |
+| 1 | **Claude-written terms check** (the rule-based version shipped). Claude flags acceptance criteria nobody can check ("looks good", "when done", no deadline, no URL) and suggests exact wording, applied in one click. It can ride on the compile call, so it costs no extra request. | S | Most freelance disputes start with a vague brief. Fixing it before money is held is the cheapest point. |
 | 2 | **"What's missing" on rejection, plus proof history.** Show the judge's per-requirement checks (met / not met) to the freelancer, and keep every submission round. | S | It turns a rejection into a to-do list and gives both sides a record. The data already exists in `checks`. |
 | 3 | **Neutral dispute summary with a one-click proposal.** Claude reads the criteria, the evidence and both notes, then proposes release, reject or a partial split that either side can accept. This needs a `PARTIAL_RELEASE` event in the state machine (capture part, void the rest of that milestone) and model-checker coverage. | M | It resolves "needs a look" without email ping-pong. Partial payment is how real disputes end. |
 | 4 | **Expanded AI-judge red-team set** (the 12 cases above) with fixtures, run in CI against the live judge. Harden the prompt where it fails, without overfitting. | M | The judge moves money, so its resistance to cheating has to be measured, not claimed. |
