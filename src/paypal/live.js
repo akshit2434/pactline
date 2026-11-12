@@ -69,6 +69,7 @@ export class LivePayPal {
       break;
     }
     const text = await res.text();
+    this.lastMeta = { call: `${method} ${path.split('?')[0]}`, httpStatus: res.status, debugId: res.headers.get('paypal-debug-id') };
     let j = {};
     try { j = text ? JSON.parse(text) : {}; } catch { j = { raw: text }; }
     if (!res.ok) {
@@ -121,8 +122,8 @@ export class LivePayPal {
     return out;
   }
 
-  async sendInvoice(id) {
-    await this.api('POST', `/v2/invoicing/invoices/${id}/send`, { send_to_recipient: true, send_to_invoicer: false });
+  async sendInvoice(id, { toRecipient = true } = {}) {
+    await this.api('POST', `/v2/invoicing/invoices/${id}/send`, { send_to_recipient: toRecipient, send_to_invoicer: false });
     return this.getInvoice(id);
   }
 
