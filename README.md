@@ -202,7 +202,7 @@ npm run smoke                                 # live sandbox: authorize → capt
 npm run e2e                                   # live sandbox end to end (needs buyer credentials and Chrome)
 ```
 
-`npm test` covers the verifier (one test per error class), the state machine with property tests, the engine (double release, PayPal failure, cancel, timeout, ledger), the HTTP API and the AI layer with its failover. On 12 Nov 2026 it ran **63 tests, 63 passing** on a clean `npm ci` checkout.
+`npm test` covers the verifier (one test per error class), the state machine with property tests, the engine (double release, PayPal failure, cancel, timeout, ledger), the HTTP API and the AI layer with its failover. On 12 Nov 2026 it ran **89 tests, 89 passing** on a clean `npm ci` checkout.
 
 ## Demo
 
