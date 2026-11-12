@@ -28,6 +28,7 @@ export function mount(root, { id }) {
         h('span', { class: 'check-badge' }, h('svg', { viewBox: '0 0 24 24', width: 36, height: 36, fill: 'none', stroke: 'currentColor', 'stroke-width': 3, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, h('path', { d: 'M5 12.500l4.500 4.500L19 7.500' }))),
         h('h1', null, money(cents, { compact: true }), ' is held by PayPal'),
         flow.el,
+        h('span', { class: 'held-line' }, 'Held by', h('img', { class: 'pp-logo-img', src: 'assets/paypal/paypal-color.svg', alt: 'PayPal', width: 85, height: 24 })),
         h('p', { class: 'note' }, 'It stays with the buyer until each milestone is proven.'),
         h('button', { class: 'btn primary lg', type: 'button', id: 'open-deal', onclick: () => go() }, 'Open the deal ', ic('arrow', 18, 'arrow')));
       flow.setLevel(0, false);
@@ -41,6 +42,7 @@ export function mount(root, { id }) {
     if (phase === 'creating') body.append(h('div', { class: 'skel', style: { width: '220px', height: '48px', borderRadius: '999px' } }));
     if (phase === 'approve') {
       body.append(
+        h('span', { class: 'held-line' }, 'The hold is placed with', h('img', { class: 'pp-logo-img', src: 'assets/paypal/paypal-color.svg', alt: 'PayPal', width: 85, height: 24 })),
         h('button', { class: 'btn primary lg', type: 'button', id: 'continue-pp', onclick: openPayPal }, ic('lock', 18), 'Continue to PayPal'),
         h('p', { class: 'note' }, 'You only authorize. Nothing is charged until a milestone passes.'));
     }

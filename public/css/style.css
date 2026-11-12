@@ -520,3 +520,15 @@ body.demo-on .page { padding-bottom: 180px; }
 .still .pl-grid .ag-row.pl-new .ag-cell { animation: none !important; }
 .pl-grid .ag-header-cell-resize::after { background-color: transparent; }
 .pl-grid .ag-header-cell:hover .ag-header-cell-resize::after { background-color: var(--line-2); }
+
+/* Official PayPal logo: unaltered, on a white tile with clear space (see assets/paypal/README.md) */
+.pp-logo-img { display: inline-block; height: 24px; width: auto; box-sizing: content-box; padding: 6px 10px; background: #fff; border-radius: 8px; vertical-align: middle; }
+.pp-logo-img.sm { height: 18px; padding: 5px 8px; }
+.site-foot { max-width: 1120px; margin: 48px auto 0; padding: 24px 32px 40px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; color: var(--ink-3); font-size: 13px; }
+.site-foot .held-by { display: inline-flex; align-items: center; gap: 10px; font-weight: 600; color: var(--ink-2); }
+.site-foot .pp-logo-img { border: 1px solid var(--line); }
+.site-foot .fine { max-width: 62ch; }
+body.demo-on .site-foot { display: none; }
+.held-line { display: inline-flex; align-items: center; gap: 10px; color: var(--ink-2); font-weight: 600; font-size: 15px; }
+.held-line .pp-logo-img { border: 1px solid var(--line); }
+@media (max-width: 640px) { .site-foot { padding: 20px 16px 32px; } }

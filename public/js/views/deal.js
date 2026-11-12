@@ -53,7 +53,7 @@ export function mount(root, { id }) {
     let target, lbl;
     if (deal.status === 'COMPLETED') { target = m.captured_cents; lbl = [ic('check', 16), `Released to ${c.freelancer.name}`]; }
     else if (deal.status === 'CANCELLED' || deal.status === 'EXPIRED') { target = m.voided_cents; lbl = [ic('undo', 16), `Returned to ${c.client.name}`]; }
-    else { target = m.remaining_cents; lbl = [ic('lock', 16), 'Held by PayPal']; }
+    else { target = m.remaining_cents; lbl = [ic('lock', 16), 'Held by', h('img', { class: 'pp-logo-img sm', src: 'assets/paypal/paypal-color.svg', alt: 'PayPal', width: 64, height: 18 })]; }
     label.replaceChildren(...lbl);
     amountEl.dataset.cents = target;
     if (animate && target !== shown) countTo(amountEl, shown, target, 800); else amountEl.textContent = money(target);
@@ -127,7 +127,7 @@ export function mount(root, { id }) {
     const body = h('div', { class: 'ms-body' }, h('div', { class: 'ms-top' }, h('span', { class: 't' }, m.title), h('span', { class: 'a' }, money(m.amount_cents, { compact: true }))), h('div', { class: 'ms-meta' }, metaBits));
     const panel = panelFor(m, st, active);
     if (panel) body.append(panel);
-    if (st === 'RELEASED' && m.receipt) body.append(h('span', { class: 'receipt' }, ic('doc', 14), `Receipt #${m.receipt.number} · paid by PayPal hold`));
+    if (st === 'RELEASED' && m.receipt) body.append(h('span', { class: 'receipt' }, ic('doc', 14), `Receipt #${m.receipt.number} · captured from the PayPal hold`));
     return h('li', { class: `s-${st} ${active ? 'active' : ''}`, 'data-mid': m.id }, node, body);
   }
 

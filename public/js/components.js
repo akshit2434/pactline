@@ -19,10 +19,10 @@ export function popover(trigger, content, cls = '') {
 }
 
 export function verifiedBadge(v, label) {
-  const btn = h('button', { type: 'button' }, ic('shield', 16), label || `Verified · ${v.paths} paths`);
+  const btn = h('button', { type: 'button' }, ic('shield', 16), label || `Verified · ${Number(v.paths).toLocaleString("en-US")} paths`);
   const body = () => [
     h('h4', null, 'Checked by a model checker'),
-    h('p', null, `Every one of ${v.paths} paths through this deal (${v.states} states) ends with the money accounted for.`),
+    h('p', null, `Every one of ${Number(v.paths).toLocaleString("en-US")} paths through this deal (${v.states} states) ends with the money accounted for.`),
     h('ul', null, (v.invariants || []).map((i) => h('li', null, ic(i.ok ? 'check' : 'x', 16), i.name))),
   ];
   return h('span', { class: 'verified' }, popover(btn, body));

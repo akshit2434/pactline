@@ -35,7 +35,7 @@ export function mount(root) {
       h('h1', null, c.title),
       h('div', { class: 'review-meta' },
         h('div', { class: 'parties' }, h('span', { class: 'av' }, initials(c.client.name)), c.client.name, h('span', { class: 'arrow' }, ic('arrow', 16)), h('span', { class: 'av alt' }, initials(c.freelancer.name)), c.freelancer.name),
-        verifiedBadge(d.verification, `Verified · ${d.verification.paths} paths`))),
+        verifiedBadge(d.verification, `Verified · ${Number(d.verification.paths).toLocaleString("en-US")} paths`))),
     h('div', { class: 'total enter', style: { animationDelay: '.05s' } },
       h('div', { class: 'hero-amt' }, money(c.hold.amount_cents).replace(/\.00$/, ''), h('small', null, '.00')),
       h('div', { class: 'sub' }, ic('lock', 18), 'held by PayPal, released milestone by milestone')),
